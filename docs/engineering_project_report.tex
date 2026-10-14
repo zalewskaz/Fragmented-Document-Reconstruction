@@ -123,10 +123,9 @@ Formulation}\label{one-sentence-engineering-research-problem-formulation}
 
 \begin{quote}
 \emph{``The objective of this project is to design, implement, and
-evaluate a software system capable of reconstructing fragmented
-(shredded or torn) documents based on an image of their pieces,
-supported by a dedicated document-splitting module for synthetic dataset
-generation and testing.''}
+evaluate a system capable of reconstructing fragmented (shredded or
+torn) documents based on an image of their pieces, supported by a
+dedicated document-splitting module.''}
 \end{quote}
 
 \begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
@@ -160,14 +159,14 @@ Scope)}\label{minimum-viable-product-mvp-passing-scope}
   \begin{itemize}
   \tightlist
   \item
-    Extracts individual fragments from an input image (single and batch
+    Extracts individual fragments from an input image (single or batch
     mode).
   \item
-    Reconstructs original documents using selectable or automated
+    Reconstructs original documents using user-selected or automated
     algorithms.
   \item
-    Displays the reconstructed output, allows iterative refinement
-    (adjusting time/algorithm), and saves the final result locally.
+    Displays the reconstructed output, allows iterative improvement
+    (adjusting time or algorithm), and saves the final result locally.
   \end{itemize}
 \end{enumerate}
 
@@ -180,6 +179,8 @@ Work)}\label{out-of-scope-future-work}
 \item
   Integration with external cloud storage providers or dedicated mobile
   applications.
+\item
+  Reconstruction of documents with missing fragments.
 \end{enumerate}
 
 \begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
@@ -187,20 +188,19 @@ Work)}\label{out-of-scope-future-work}
 \subsection{4. Functional Requirements (User Stories \& Acceptance
 Criteria)}\label{functional-requirements-user-stories-acceptance-criteria}
 
-\subsubsection{\texorpdfstring{\textbf{US-01: Ingestion of a Single
-Telemetry Data
-Point}}{US-01: Ingestion of a Single Telemetry Data Point}}\label{us-01-ingestion-of-a-single-telemetry-data-point}
+\subsubsection{\texorpdfstring{\textbf{US-01: Loading a document image
+for
+splitting}}{US-01: Loading a document image for splitting}}\label{us-01-loading-a-document-image-for-splitting}
 
 \begin{itemize}
 \tightlist
 \item
-  \textbf{As an:} External system (e.g., IoT sensor / telemetry script),
+  \textbf{As a:} User of the document splitting module,
 \item
-  \textbf{I want to:} Submit a measurement with a timestamp and numeric
-  value via the \texttt{POST\ /api/v1/metrics} endpoint,
+  \textbf{I want to:} Upload a single document image or select a folder
+  of document images,
 \item
-  \textbf{So that:} The data is validated, stored in the time-series
-  database, and forwarded to the analytical engine.
+  \textbf{So that:} The system can process them for fragment generation.
 \end{itemize}
 
 \begin{quote}
@@ -209,43 +209,38 @@ Point}}{US-01: Ingestion of a Single Telemetry Data Point}}\label{us-01-ingestio
 \begin{itemize}
 \tightlist
 \item
-  \textbf{Given:} A running and authenticated ingestion service,
+  \textbf{Given:} The splitting module is open,
 \item
-  \textbf{When:} The client sends a \texttt{POST} request with a valid
-  JSON payload
-  \texttt{\{\ "sensor\_id":\ "temp-01",\ "timestamp":\ 1729000000,\ "value":\ 24.5\ \}},
+  \textbf{When:} The user uploads a valid image file or selects a folder
+  containing valid image files,
 \item
-  \textbf{Then:} The system returns response status
-  \texttt{201\ Created} in \(\le 50\) ms, and the record is persisted in
-  the TimescaleDB hypertable.
+  \textbf{Then:} The system loads the images and displays a preview of
+  the first document.
 \item
-  \textbf{Scenario (Invalid data):}
+  \textbf{Scenario (Invalid input):}
 \item
-  \textbf{When:} The client sends a request with a negative timestamp or
-  a missing \texttt{value} field,
+  \textbf{When:} The user uploads a file in an unsupported format or an
+  empty folder,
 \item
-  \textbf{Then:} The system rejects the request with HTTP
-  \texttt{422\ Unprocessable\ Entity} containing a detailed validation
-  error message.
+  \textbf{Then:} The system displays an error message indicating the
+  accepted formats.
 \end{itemize}
 \end{quote}
 
 \begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
 
-\subsubsection{\texorpdfstring{\textbf{US-02: Viewing Time-Series Chart
-with Flagged
-Anomalies}}{US-02: Viewing Time-Series Chart with Flagged Anomalies}}\label{us-02-viewing-time-series-chart-with-flagged-anomalies}
+\subsubsection{\texorpdfstring{\textbf{US-02: Splitting a document into
+fragments}}{US-02: Splitting a document into fragments}}\label{us-02-splitting-a-document-into-fragments}
 
 \begin{itemize}
 \tightlist
 \item
-  \textbf{As an:} Operations engineer / data analyst,
+  \textbf{As a:} User of the document splitting module,
 \item
-  \textbf{I want to:} Open the chart view for a selected sensor covering
-  the last 24 hours with highlighted anomalies,
+  \textbf{I want to:} Select a splitting algorithm and its parameters
+  and preview the proposed piece borders overlaid on the document,
 \item
-  \textbf{So that:} I can quickly diagnose equipment faults across
-  infrastructure.
+  \textbf{So that:} I can control how the document is fragmented.
 \end{itemize}
 
 \begin{quote}
@@ -254,13 +249,169 @@ Anomalies}}{US-02: Viewing Time-Series Chart with Flagged Anomalies}}\label{us-0
 \begin{itemize}
 \tightlist
 \item
-  \textbf{Given:} A user logged in to the web dashboard,
+  \textbf{Given:} A document image has been loaded,
 \item
-  \textbf{When:} The user selects sensor \texttt{sensor\_id="temp-01"}
-  and time window \texttt{24h} from the menu,
+  \textbf{When:} The user selects a splitting algorithm and confirms its
+  parameters,
 \item
-  \textbf{Then:} The line chart renders in \(< 1.0\) s with anomalous
-  points highlighted in red.
+  \textbf{Then:} The system displays the proposed piece borders overlaid
+  on the original image.
+\item
+  \textbf{When:} The user is not satisfied with the result and clicks
+  ``Generate again'',
+\item
+  \textbf{Then:} The system generates a new set of borders using the
+  same or modified parameters.
+\end{itemize}
+\end{quote}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsubsection{\texorpdfstring{\textbf{US-03: Generating a fragmented
+image}}{US-03: Generating a fragmented image}}\label{us-03-generating-a-fragmented-image}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{As a:} User of the document splitting module,
+\item
+  \textbf{I want to:} Confirm the generated borders and have the system
+  randomly rotate the pieces and arrange them on a plain background
+  without overlapping,
+\item
+  \textbf{So that:} I get an image of document fragments for testing
+\end{itemize}
+
+\begin{quote}
+\textbf{Acceptance Criteria (Gherkin):}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Given:} The user has confirmed a set of piece borders,
+\item
+  \textbf{When:} The user sets parameters and confirms,
+\item
+  \textbf{Then:} The system produces an image with all fragments placed
+  on the background without overlap.
+\item
+  \textbf{When:} The user can save the result to a chosen disk location.
+\end{itemize}
+\end{quote}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsubsection{\texorpdfstring{\textbf{US-04: Extracting fragments from
+an input
+image}}{US-04: Extracting fragments from an input image}}\label{us-04-extracting-fragments-from-an-input-image}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{As a:} User of the document reconstruction module,
+\item
+  \textbf{I want to:} Upload an image containing document fragments
+  (single or batch mode),
+\item
+  \textbf{So that:} The system extracts individual pieces for
+  reconstruction.
+\end{itemize}
+
+\begin{quote}
+\textbf{Acceptance Criteria (Gherkin):}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Given:} The reconstruction module is open,
+\item
+  \textbf{When:} The user uploads a valid image containing
+  non-overlapping fragments,
+\item
+  \textbf{Then:} The system identifies and extracts all individual
+  fragments from the image.
+\item
+  \textbf{Scenario (Invalid input):}
+\item
+  \textbf{When:} The image does not contain identifiable fragments,
+\item
+  \textbf{Then:} The system displays an appropriate error message.
+\end{itemize}
+\end{quote}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsubsection{\texorpdfstring{\textbf{US-05: Reconstructing a document
+from
+fragments}}{US-05: Reconstructing a document from fragments}}\label{us-05-reconstructing-a-document-from-fragments}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{As a:} User of the document reconstruction module,
+\item
+  \textbf{I want to:} Select a reconstruction algorithm (or let the
+  system choose automatically) and view the reconstructed document,
+\item
+  \textbf{So that:} I can achieve the original document content in a
+  legible form.
+\end{itemize}
+
+\begin{quote}
+\textbf{Acceptance Criteria (Gherkin):}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Given:} Fragments have been extracted from the input image,
+\item
+  \textbf{When:} The user selects an algorithm or chooses automatic
+  selection, and starts reconstruction,
+\item
+  \textbf{Then:} The system displays the reconstructed document image.
+\end{itemize}
+\end{quote}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsubsection{\texorpdfstring{\textbf{US-06: Iterative enhancement of
+reconstruction}}{US-06: Iterative enhancement of reconstruction}}\label{us-06-iterative-enhancement-of-reconstruction}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{As a:} User of the document reconstruction module,
+\item
+  \textbf{I want to:} Review the reconstruction result and choose to
+  accept it, continue the same algorithm for more time or switch to a
+  different algorithm,
+\item
+  \textbf{So that:} I can iteratively improve the reconstruction
+  quality.
+\end{itemize}
+
+\begin{quote}
+\textbf{Acceptance Criteria (Gherkin):}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Given:} A reconstruction result is displayed,
+\item
+  \textbf{When:} The user selects ``Continue'' with the current
+  algorithm,
+\item
+  \textbf{Then:} The system resumes processing.
+\item
+  \textbf{When:} The user selects ``Change algorithm'' and picks a new
+  one,
+\item
+  \textbf{Then:} The system restarts reconstruction with the new
+  algorithm.
+\item
+  \textbf{When:} The user selects ``Accept'',
+\item
+  \textbf{Then:} The system allows saving the result locally.
 \end{itemize}
 \end{quote}
 
@@ -271,10 +422,10 @@ Anomalies}}{US-02: Viewing Time-Series Chart with Flagged Anomalies}}\label{us-0
 
 {\def\LTcaptype{none} % do not increment counter
 \begin{longtable}[]{@{}
-  >{\centering\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.0693}}
-  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.1558}}
-  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.6407}}
-  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.1342}}@{}}
+  >{\centering\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.2000}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.2667}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.2667}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.2667}}@{}}
 \toprule\noalign{}
 \begin{minipage}[b]{\linewidth}\centering
 ID
@@ -289,23 +440,24 @@ Verification Method
 \endhead
 \bottomrule\noalign{}
 \endlastfoot
-\textbf{NFR-01} & \textbf{Response Time (Latency)} & 95\% of write and
-read requests respond in\(< 200\) ms under a load of 50 concurrent
-virtual users. & k6 / Locust load benchmark \\
-\textbf{NFR-02} & \textbf{Throughput} & Ingestion engine
-processes\(\ge 5\,000\) events/second on a 4-core machine with 16 GB
-RAM. & Locust stress test \\
-\textbf{NFR-03} & \textbf{Resource Utilization} & Total idle RAM
-consumption of the container stack\(\le 2.0\) GB; analytical model runs
-in CPU memory without GPU requirements. & \texttt{docker\ stats} \\
-\textbf{NFR-04} & \textbf{Deployment Reproducibility} & Complete
-deployment and startup of a clean environment
-using\texttt{docker\ compose\ up\ -\/-build} completes in \(< 3\)
-minutes on a MiNI lab Ubuntu machine. & Stopwatch / installation
-script \\
-\textbf{NFR-05} & \textbf{Reliability} & 0 unhandled HTTP 500 exceptions
-on malformed input data; automated database reconnection retries in
-containers. & pytest integration test suite \\
+\textbf{NFR-01} & \textbf{Performance (Splitting)} & Splitting a single
+A4-sized document image into at least 50 fragments completes under 60
+seconds. & Automated benchmark script with sample dataset \\
+\textbf{NFR-02} & \textbf{Performance (Reconstruction)} & Reconstruction
+of a document with at least 50 fragments completes under 60 minutes. &
+Automated benchmark script with sample dataset \\
+\textbf{NFR-03} & \textbf{Scalability} & The system handles documents
+split into up to 100 fragments without crashing. & Stress tess \\
+\textbf{NFR-04} & \textbf{Usability} & A user with no prior training can
+complete a full split-and-reconstruct workflow. & Usability test \\
+\textbf{NFR-05} & \textbf{Error Handling} & 100\% of invalid inputs
+produce a user-friendly error message. & test covering all invalid input
+scenarios \\
+\textbf{NFR-06} & \textbf{Availability} & The system operates fully
+offline & Disconnected network test \\
+\textbf{NFR-07} & \textbf{Security} & All image processing is performed
+locally and no data is transmitted to external servers. & Manual
+verification of network traffic \\
 \end{longtable}
 }
 

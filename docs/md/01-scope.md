@@ -21,7 +21,7 @@
 
 ## 2. One-Sentence Engineering / Research Problem Formulation
 
-> *“The objective of this project is to design, implement, and evaluate a software system capable of reconstructing fragmented (shredded or torn) documents based on an image of their pieces, supported by a dedicated document-splitting module for synthetic dataset generation and testing.”*
+> *“The objective of this project is to design, implement, and evaluate a system capable of reconstructing fragmented (shredded or torn) documents based on an image of their pieces, supported by a dedicated document-splitting module.”*
 
 ---
 
@@ -34,58 +34,128 @@
    - Allows users to split document images using various algorithms, preview piece borders, re-generate if needed, and apply random rotations and non-overlapping background placement.
    - Saves the generated fragments locally.
 2. **Document Reconstruction Module (Module 2):**
-   - Extracts individual fragments from an input image (single and batch mode).
-   - Reconstructs original documents using selectable or automated algorithms.
-   - Displays the reconstructed output, allows iterative refinement (adjusting time/algorithm), and saves the final result locally.
+   - Extracts individual fragments from an input image (single or batch mode).
+   - Reconstructs original documents using user-selected or automated algorithms.
+   - Displays the reconstructed output, allows iterative improvement (adjusting time or algorithm), and saves the final result locally.
 
 ### 3.2. Out of Scope (Future Work)
 
 1. Integration with external cloud storage providers or dedicated mobile applications.
+2. Reconstruction of documents with missing fragments.
+
 
 ---
 
 ## 4. Functional Requirements (User Stories & Acceptance Criteria)
-
-### **US-01: Ingestion of a Single Telemetry Data Point**
-
-* **As an:** External system (e.g., IoT sensor / telemetry script),
-* **I want to:** Submit a measurement with a timestamp and numeric value via the `POST /api/v1/metrics` endpoint,
-* **So that:** The data is validated, stored in the time-series database, and forwarded to the analytical engine.
-
+ 
+### **US-01: Loading a document image for splitting**
+ 
+* **As a:** User of the document splitting module,
+* **I want to:** Upload a single document image or select a folder of document images,
+* **So that:** The system can process them for fragment generation.
+ 
 > **Acceptance Criteria (Gherkin):**
 >
-> * **Given:** A running and authenticated ingestion service,
-> * **When:** The client sends a `POST` request with a valid JSON payload `{ "sensor_id": "temp-01", "timestamp": 1729000000, "value": 24.5 }`,
-> * **Then:** The system returns response status `201 Created` in $\le 50$ ms, and the record is persisted in the TimescaleDB hypertable.
-> * **Scenario (Invalid data):**
-> * **When:** The client sends a request with a negative timestamp or a missing `value` field,
-> * **Then:** The system rejects the request with HTTP `422 Unprocessable Entity` containing a detailed validation error message.
-
+> * **Given:** The splitting module is open,
+> * **When:** The user uploads a valid image file or selects a folder containing valid image files,
+> * **Then:** The system loads the images and displays a preview of the first document.
+> * **Scenario (Invalid input):**
+> * **When:** The user uploads a file in an unsupported format or an empty folder,
+> * **Then:** The system displays an error message indicating the accepted formats.
+ 
 ---
-
-### **US-02: Viewing Time-Series Chart with Flagged Anomalies**
-
-* **As an:** Operations engineer / data analyst,
-* **I want to:** Open the chart view for a selected sensor covering the last 24 hours with highlighted anomalies,
-* **So that:** I can quickly diagnose equipment faults across infrastructure.
-
+ 
+### **US-02: Splitting a document into fragments**
+ 
+* **As a:** User of the document splitting module,
+* **I want to:** Select a splitting algorithm and its parameters and preview the proposed piece borders overlaid on the document,
+* **So that:** I can control how the document is fragmented.
+ 
 > **Acceptance Criteria (Gherkin):**
 >
-> * **Given:** A user logged in to the web dashboard,
-> * **When:** The user selects sensor `sensor_id="temp-01"` and time window `24h` from the menu,
-> * **Then:** The line chart renders in $< 1.0$ s with anomalous points highlighted in red.
+> * **Given:** A document image has been loaded,
+> * **When:** The user selects a splitting algorithm and confirms its parameters,
+> * **Then:** The system displays the proposed piece borders overlaid on the original image.
+> * **When:** The user is not satisfied with the result and clicks "Generate again",
+> * **Then:** The system generates a new set of borders using the same or modified parameters.
+ 
+---
+ 
+### **US-03: Generating a fragmented image**
+ 
+* **As a:** User of the document splitting module,
+* **I want to:** Confirm the generated borders and have the system randomly rotate the pieces and arrange them on a plain background without overlapping,
+* **So that:** I get an image of document fragments for testing
+ 
+> **Acceptance Criteria (Gherkin):**
+>
+> * **Given:** The user has confirmed a set of piece borders,
+> * **When:** The user sets parameters and confirms,
+> * **Then:** The system produces an image with all fragments placed on the background without overlap.
+> * **When:** The user can save the result to a chosen disk location.
+ 
+---
+ 
+### **US-04: Extracting fragments from an input image**
+ 
+* **As a:** User of the document reconstruction module,
+* **I want to:** Upload an image containing document fragments (single or batch mode),
+* **So that:** The system extracts individual pieces for reconstruction.
+ 
+> **Acceptance Criteria (Gherkin):**
+>
+> * **Given:** The reconstruction module is open,
+> * **When:** The user uploads a valid image containing non-overlapping fragments,
+> * **Then:** The system identifies and extracts all individual fragments from the image.
+> * **Scenario (Invalid input):**
+> * **When:** The image does not contain identifiable fragments,
+> * **Then:** The system displays an appropriate error message.
+ 
+---
+ 
+### **US-05: Reconstructing a document from fragments**
+ 
+* **As a:** User of the document reconstruction module,
+* **I want to:** Select a reconstruction algorithm (or let the system choose automatically) and view the reconstructed document,
+* **So that:** I can achieve the original document content in a legible form.
+ 
+> **Acceptance Criteria (Gherkin):**
+>
+> * **Given:** Fragments have been extracted from the input image,
+> * **When:** The user selects an algorithm or chooses automatic selection, and starts reconstruction,
+> * **Then:** The system displays the reconstructed document image.
+ 
+---
+ 
+### **US-06: Iterative enhancement of reconstruction**
+ 
+* **As a:** User of the document reconstruction module,
+* **I want to:** Review the reconstruction result and choose to accept it, continue the same algorithm for more time or switch to a different algorithm,
+* **So that:** I can iteratively improve the reconstruction quality.
+ 
+> **Acceptance Criteria (Gherkin):**
+>
+> * **Given:** A reconstruction result is displayed,
+> * **When:** The user selects "Continue" with the current algorithm,
+> * **Then:** The system resumes processing.
+> * **When:** The user selects "Change algorithm" and picks a new one,
+> * **Then:** The system restarts reconstruction with the new algorithm.
+> * **When:** The user selects "Accept",
+> * **Then:** The system allows saving the result locally.
 
 ---
 
 ## 5. Quantifiable Non-Functional Requirements (NFRs)
-
-|        ID        | Category                             | Target Quantifiable Metric                                                                                                                           | Verification Method             |
-| :--------------: | :----------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------ |
-| **NFR-01** | **Response Time (Latency)**    | 95% of write and read requests respond in$< 200$ ms under a load of 50 concurrent virtual users.                                                   | k6 / Locust load benchmark      |
-| **NFR-02** | **Throughput**                 | Ingestion engine processes$\ge 5\,000$ events/second on a 4-core machine with 16 GB RAM.                                                           | Locust stress test              |
-| **NFR-03** | **Resource Utilization**       | Total idle RAM consumption of the container stack$\le 2.0$ GB; analytical model runs in CPU memory without GPU requirements.                       | `docker stats`                |
-| **NFR-04** | **Deployment Reproducibility** | Complete deployment and startup of a clean environment using`docker compose up --build` completes in $< 3$ minutes on a MiNI lab Ubuntu machine. | Stopwatch / installation script |
-| **NFR-05** | **Reliability**                | 0 unhandled HTTP 500 exceptions on malformed input data; automated database reconnection retries in containers.                                      | pytest integration test suite   |
+ 
+| ID | Category | Target Quantifiable Metric | Verification Method |
+| :-: | :--- | :--- | :--- |
+| **NFR-01** | **Performance (Splitting)** | Splitting a single A4-sized document image into at least 50 fragments completes under 60 seconds. | Automated benchmark script with sample dataset |
+| **NFR-02** | **Performance (Reconstruction)** | Reconstruction of a document with at least 50 fragments completes under 60 minutes. | Automated benchmark script with sample dataset |
+| **NFR-03** | **Scalability** | The system handles documents split into up to 100 fragments without crashing. | Stress tess |
+| **NFR-04** | **Usability** | A user with no prior training can complete a full split-and-reconstruct workflow. | Usability test |
+| **NFR-05** | **Error Handling** | 100% of invalid inputs produce a user-friendly error message. | test covering all invalid input scenarios |
+| **NFR-06** | **Availability** | The system operates fully offline | Disconnected network test |
+| **NFR-07** | **Security** | All image processing is performed locally and no data is transmitted to external servers.  | Manual verification of network traffic |
 
 ---
 
