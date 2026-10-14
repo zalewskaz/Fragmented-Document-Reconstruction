@@ -1,0 +1,383 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\documentclass[
+]{article}
+\usepackage{xcolor}
+\usepackage{amsmath,amssymb}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{longtable,booktabs,array}
+\usepackage{caption}
+\captionsetup[table]{skip=6pt}
+\newcounter{none} % for unnumbered tables
+\usepackage{calc} % for calculating minipage widths
+% Correct order of tables after \paragraph or \subparagraph
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+% fallback for those not using the hyperref driver hyperxmp:
+\makeatletter
+\@ifundefined{xmpquote}{\newcommand{\xmpquote}[1]{#1}}{}
+\makeatother
+\hypersetup{
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\author{}
+\date{}
+
+\begin{document}
+
+\section{Stage 1 Document: Requirements Specification and Project
+Scope}\label{stage-1-document-requirements-specification-and-project-scope}
+
+\textbf{Engineering Project Documentation}\\
+\textbf{Faculty of Mathematics and Information Science}\\
+\textbf{Warsaw University of Technology}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{1. Document Metadata and Change
+History}\label{document-metadata-and-change-history}
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}
+  >{\centering\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.1444}}
+  >{\centering\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.1111}}
+  >{\centering\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.1556}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.5889}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\centering
+Version
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+Date
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+Author
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Description of Change
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\textbf{1.0} & 15.10.2024 & Alice Kowalska & Baseline version for
+supervisor sign-off \\
+\textbf{1.1} & 18.10.2024 & Bob Nowak & Added quantifiable
+non-functional requirements (NFRs) \\
+\end{longtable}
+}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Project Title:} \emph{A System for Reconstructing Fragmented
+  Documents Based on the Shape and Content of Their Parts}
+\item
+  \textbf{Authors:} Martyna Sadowska, Hanna Szczerbińska, Zuzanna
+  Zalewska
+\item
+  \textbf{Supervisor:} Janusz Rafałko, Ph.D.
+\end{itemize}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{2. One-Sentence Engineering / Research Problem
+Formulation}\label{one-sentence-engineering-research-problem-formulation}
+
+\begin{quote}
+\emph{``The objective of this project is to design, implement, and
+evaluate a software system capable of reconstructing fragmented
+(shredded or torn) documents based on an image of their pieces,
+supported by a dedicated document-splitting module for synthetic dataset
+generation and testing.''}
+\end{quote}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{3. Project Scope: MVP vs.~Future Work (Scope
+Management)}\label{project-scope-mvp-vs.-future-work-scope-management}
+
+\subsubsection{3.1. Minimum Viable Product (MVP -- Passing
+Scope)}\label{minimum-viable-product-mvp-passing-scope}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{Document Splitting Module (Module 1):}
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Supports single and batch mode processing.
+  \item
+    Allows users to split document images using various algorithms,
+    preview piece borders, re-generate if needed, and apply random
+    rotations and non-overlapping background placement.
+  \item
+    Saves the generated fragments locally.
+  \end{itemize}
+\item
+  \textbf{Document Reconstruction Module (Module 2):}
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Extracts individual fragments from an input image (single and batch
+    mode).
+  \item
+    Reconstructs original documents using selectable or automated
+    algorithms.
+  \item
+    Displays the reconstructed output, allows iterative refinement
+    (adjusting time/algorithm), and saves the final result locally.
+  \end{itemize}
+\end{enumerate}
+
+\subsubsection{3.2. Out of Scope (Future
+Work)}\label{out-of-scope-future-work}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Integration with external cloud storage providers or dedicated mobile
+  applications.
+\end{enumerate}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{4. Functional Requirements (User Stories \& Acceptance
+Criteria)}\label{functional-requirements-user-stories-acceptance-criteria}
+
+\subsubsection{\texorpdfstring{\textbf{US-01: Ingestion of a Single
+Telemetry Data
+Point}}{US-01: Ingestion of a Single Telemetry Data Point}}\label{us-01-ingestion-of-a-single-telemetry-data-point}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{As an:} External system (e.g., IoT sensor / telemetry script),
+\item
+  \textbf{I want to:} Submit a measurement with a timestamp and numeric
+  value via the \texttt{POST\ /api/v1/metrics} endpoint,
+\item
+  \textbf{So that:} The data is validated, stored in the time-series
+  database, and forwarded to the analytical engine.
+\end{itemize}
+
+\begin{quote}
+\textbf{Acceptance Criteria (Gherkin):}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Given:} A running and authenticated ingestion service,
+\item
+  \textbf{When:} The client sends a \texttt{POST} request with a valid
+  JSON payload
+  \texttt{\{\ "sensor\_id":\ "temp-01",\ "timestamp":\ 1729000000,\ "value":\ 24.5\ \}},
+\item
+  \textbf{Then:} The system returns response status
+  \texttt{201\ Created} in \(\le 50\) ms, and the record is persisted in
+  the TimescaleDB hypertable.
+\item
+  \textbf{Scenario (Invalid data):}
+\item
+  \textbf{When:} The client sends a request with a negative timestamp or
+  a missing \texttt{value} field,
+\item
+  \textbf{Then:} The system rejects the request with HTTP
+  \texttt{422\ Unprocessable\ Entity} containing a detailed validation
+  error message.
+\end{itemize}
+\end{quote}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsubsection{\texorpdfstring{\textbf{US-02: Viewing Time-Series Chart
+with Flagged
+Anomalies}}{US-02: Viewing Time-Series Chart with Flagged Anomalies}}\label{us-02-viewing-time-series-chart-with-flagged-anomalies}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{As an:} Operations engineer / data analyst,
+\item
+  \textbf{I want to:} Open the chart view for a selected sensor covering
+  the last 24 hours with highlighted anomalies,
+\item
+  \textbf{So that:} I can quickly diagnose equipment faults across
+  infrastructure.
+\end{itemize}
+
+\begin{quote}
+\textbf{Acceptance Criteria (Gherkin):}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Given:} A user logged in to the web dashboard,
+\item
+  \textbf{When:} The user selects sensor \texttt{sensor\_id="temp-01"}
+  and time window \texttt{24h} from the menu,
+\item
+  \textbf{Then:} The line chart renders in \(< 1.0\) s with anomalous
+  points highlighted in red.
+\end{itemize}
+\end{quote}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{5. Quantifiable Non-Functional Requirements
+(NFRs)}\label{quantifiable-non-functional-requirements-nfrs}
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}
+  >{\centering\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.0693}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.1558}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.6407}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.1342}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\centering
+ID
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Category
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Target Quantifiable Metric
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Verification Method
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\textbf{NFR-01} & \textbf{Response Time (Latency)} & 95\% of write and
+read requests respond in\(< 200\) ms under a load of 50 concurrent
+virtual users. & k6 / Locust load benchmark \\
+\textbf{NFR-02} & \textbf{Throughput} & Ingestion engine
+processes\(\ge 5\,000\) events/second on a 4-core machine with 16 GB
+RAM. & Locust stress test \\
+\textbf{NFR-03} & \textbf{Resource Utilization} & Total idle RAM
+consumption of the container stack\(\le 2.0\) GB; analytical model runs
+in CPU memory without GPU requirements. & \texttt{docker\ stats} \\
+\textbf{NFR-04} & \textbf{Deployment Reproducibility} & Complete
+deployment and startup of a clean environment
+using\texttt{docker\ compose\ up\ -\/-build} completes in \(< 3\)
+minutes on a MiNI lab Ubuntu machine. & Stopwatch / installation
+script \\
+\textbf{NFR-05} & \textbf{Reliability} & 0 unhandled HTTP 500 exceptions
+on malformed input data; automated database reconnection retries in
+containers. & pytest integration test suite \\
+\end{longtable}
+}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{6. Glossary}\label{glossary}
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 2\tabcolsep) * \real{0.1783}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 2\tabcolsep) * \real{0.8217}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Term
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Definition
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\textbf{APD (Archiwum Prac Dyplomowych)} & University Thesis Archive;
+official web portal of Warsaw University of Technology used for thesis
+submission, anti-plagiarism verification, and archiving. \\
+\textbf{Hypertable} & A TimescaleDB abstraction that presents
+time-series data as a single continuous PostgreSQL table while
+transparently partitioning it into time-based chunks under the hood. \\
+\textbf{Isolation Forest} & An unsupervised machine learning algorithm
+for anomaly detection that isolates observations by randomly selecting a
+feature and split value, where anomalies require fewer splits to
+isolate. \\
+\textbf{MVP (Minimum Viable Product)} & The minimal functional scope of
+the project fulfilling all foundational requirements for academic
+project evaluation and defense. \\
+\textbf{p95 Latency} & The 95th percentile of response time
+distribution, indicating that 95\% of all incoming requests are served
+in less than the specified duration. \\
+\textbf{Rolling Z-Score} & A localized statistical metric representing
+the number of standard deviations a given observation deviates from the
+moving mean over a sliding temporal window. \\
+\textbf{Telemetry} & Automated remote collection and transmission of
+operational measurement data from distributed sensors or agents to a
+central receiving station. \\
+\end{longtable}
+}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{7. Preliminary Risk Register and Role
+Allocation}\label{preliminary-risk-register-and-role-allocation}
+
+\emph{(Detailed Risk Register and RACI Matrix are defined in dedicated
+documents:
+\href{../management/risk-register-and-contingency.md}{\texttt{management/risk-register-and-contingency.md}}
+and
+\href{../management/team-charter-and-raci.md}{\texttt{management/team-charter-and-raci.md}}.)}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{8. Formal Supervisor
+Acceptance}\label{formal-supervisor-acceptance}
+
+\begin{itemize}
+\tightlist
+\item[$\boxtimes$]
+  \textbf{Scope and MVP Sign-off:} The supervisor has reviewed the
+  requirements specification and approves the MVP scope as the
+  foundation for the engineering / master's degree project.
+\end{itemize}
+
+\textbf{Supervisor Signature:}
+\ldots\ldots\ldots\ldots\ldots\ldots\ldots\ldots\ldots\ldots\ldots\ldots\ldots\ldots\ldots\ldots\ldots\ldots\ldots\ldots{}
+\textbf{Date:} October 18, 2026
+
+\end{document}
