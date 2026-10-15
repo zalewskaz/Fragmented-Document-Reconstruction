@@ -165,12 +165,7 @@
 | Term                                      | Definition                                                                                                                                                                                    |
 | :---------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **APD (Archiwum Prac Dyplomowych)** | University Thesis Archive; official web portal of Warsaw University of Technology used for thesis submission, anti-plagiarism verification, and archiving.                                    |
-| **Hypertable**                      | A TimescaleDB abstraction that presents time-series data as a single continuous PostgreSQL table while transparently partitioning it into time-based chunks under the hood.                   |
-| **Isolation Forest**                | An unsupervised machine learning algorithm for anomaly detection that isolates observations by randomly selecting a feature and split value, where anomalies require fewer splits to isolate. |
-| **MVP (Minimum Viable Product)**    | The minimal functional scope of the project fulfilling all foundational requirements for academic project evaluation and defense.                                                             |
-| **p95 Latency**                     | The 95th percentile of response time distribution, indicating that 95% of all incoming requests are served in less than the specified duration.                                               |
-| **Rolling Z-Score**                 | A localized statistical metric representing the number of standard deviations a given observation deviates from the moving mean over a sliding temporal window.                               |
-| **Telemetry**                       | Automated remote collection and transmission of operational measurement data from distributed sensors or agents to a central receiving station.                                               |
+| **MVP (Minimum Viable Product)**    | The minimal functional scope of the project fulfilling all foundational requirements for academic project evaluation and defense.                                                                                              |
 
 ---
 
