@@ -44,7 +44,7 @@
 
 1. Integration with external cloud storage providers or dedicated mobile applications.
 2. Reconstruction of documents with missing fragments.
-
+3. Reconstruction of several documents whose fragments are combined. 
 
 ---
 
@@ -167,7 +167,9 @@
 | Term                                      | Definition                                                                                                                                                                                    |
 | :---------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **APD (Archiwum Prac Dyplomowych)** | University Thesis Archive; official web portal of Warsaw University of Technology used for thesis submission, anti-plagiarism verification, and archiving.                                    |
-| **MVP (Minimum Viable Product)**    | The minimal functional scope of the project fulfilling all foundational requirements for academic project evaluation and defense.                                                                                              |
+| **MVP (Minimum Viable Product)**    | The minimal functional scope of the project fulfilling all foundational requirements for academic project evaluation and defense.                                                             |
+| **Module 1**    | The document-splitting module, whose scope includes splitting an image into several fragments and arranging those fragments against a background.                                                              |
+| **Module 2**    | The document reconstruction module, whose scope includes extracting individual fragments from an image and reconstructing the original document based on the fragments' shape and content.                                                              |
 
 ---
 
