@@ -13,6 +13,7 @@
 | **1.0** | 13.10.2026 | Zuzanna Zalewska | Baseline version for supervisor sign-off, problem formulation and project scope              |
 | **1.1** | 14.10.2026 |   Zuzanna Zalewska   | Added functional non-functional requirements |
 | **1.2** | 15.10.2026 | Martyna Sadowska | Added risk register and contingency plans
+| **1.3** | 16.10.2026 | Hanna Szczerbinska | Expanded out of scope and glossary sections. 
 
 * **Project Title:** *A System for Reconstructing Fragmented Documents Based on the Shape and Content of Their Parts*
 * **Authors:** Martyna Sadowska, Hanna Szczerbińska, Zuzanna Zalewska
