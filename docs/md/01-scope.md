@@ -22,7 +22,7 @@
 
 ## 2. One-Sentence Engineering / Research Problem Formulation
 
-> *“The objective of this project is to design, implement, and evaluate a system capable of reconstructing fragmented (shredded or torn) documents based on an image of their pieces, supported by a dedicated document-splitting module.”*
+> *“The objective of this project is to design, implement, and evaluate a system capable of reconstructing fragmented (shredded or torn) documents based on an image of their pieces, as well as artificially splitting a document into such pieces.”*
 
 ---
 
@@ -33,11 +33,12 @@
 1. **Document Splitting Module (Module 1):** 
    - Supports single and batch mode processing.
    - Allows users to split document images using various algorithms, preview piece borders, re-generate if needed, and apply random rotations and non-overlapping background placement.
-   - Saves the generated fragments locally.
+   - Saves the final image of generated fragments locally.
 2. **Document Reconstruction Module (Module 2):**
-   - Extracts individual fragments from an input image (single or batch mode).
-   - Reconstructs original documents using user-selected or automated algorithms.
-   - Displays the reconstructed output, allows iterative improvement (adjusting time or algorithm), and saves the final result locally.
+   - Supports single and batch mode processing.
+   - Extracts individual fragments from an input image.
+   - Reconstructs original documents using a variety of algorithms.
+   - Displays the reconstructed output, allows for iterative improvement (adjusting either the processing time or algorithm used), and saves the final result locally.
 
 ### 3.2. Out of Scope (Future Work)
 
@@ -61,7 +62,7 @@
 > * **When:** The user uploads a valid image file or selects a folder containing valid image files,
 > * **Then:** The system loads the images and displays a preview of the first document.
 > * **Scenario (Invalid input):**
-> * **When:** The user uploads a file in an unsupported format or an empty folder,
+> * **When:** The user uploads a file in an unsupported format or a file that doesn't contain any valid image files,
 > * **Then:** The system displays an error message indicating the accepted formats.
  
 ---
@@ -78,7 +79,7 @@
 > * **When:** The user selects a splitting algorithm and confirms its parameters,
 > * **Then:** The system displays the proposed piece borders overlaid on the original image.
 > * **When:** The user is not satisfied with the result and clicks "Generate again",
-> * **Then:** The system generates a new set of borders using the same or modified parameters.
+> * **Then:** The system generates a new set of borders using the currently selected algorithm and its parameters.
  
 ---
  
@@ -86,14 +87,15 @@
  
 * **As a:** User of the document splitting module,
 * **I want to:** Confirm the generated borders and have the system randomly rotate the pieces and arrange them on a plain background without overlapping,
-* **So that:** I get an image of document fragments for testing
+* **So that:** I get an image with document fragments which can later be used for testing the document reconstruction module. 
  
 > **Acceptance Criteria (Gherkin):**
 >
 > * **Given:** The user has confirmed a set of piece borders,
-> * **When:** The user sets parameters and confirms,
-> * **Then:** The system produces an image with all fragments placed on the background without overlap.
-> * **When:** The user can save the result to a chosen disk location.
+> * **When:** The user sets the parameters for arranging the pieces and confirms them,
+> * **Then:** The system produces an image with all fragments placed on the background without any overlap.
+> * **When:** The user selects the option to save the final image and selects a disk location, 
+> * **Then:** The result is saved to the chosen disk location.
  
 ---
  
@@ -117,8 +119,8 @@
 ### **US-05: Reconstructing a document from fragments**
  
 * **As a:** User of the document reconstruction module,
-* **I want to:** Select a reconstruction algorithm (or let the system choose automatically) and view the reconstructed document,
-* **So that:** I can achieve the original document content in a legible form.
+* **I want to:** Select a reconstruction algorithm (or let the system choose one automatically) and view the reconstructed document,
+* **So that:** I can receive the original document content in a legible form.
  
 > **Acceptance Criteria (Gherkin):**
 >
@@ -150,8 +152,8 @@
  
 | ID | Category | Target Quantifiable Metric | Verification Method |
 | :-: | :--- | :--- | :--- |
-| **NFR-01** | **Performance (Splitting)** | Splitting a single A4-sized document image into at least 50 fragments completes under 60 seconds. | Automated benchmark script with sample dataset |
-| **NFR-02** | **Performance (Reconstruction)** | Reconstruction of a document with at least 50 fragments completes under 60 minutes. | Automated benchmark script with sample dataset |
+| **NFR-01** | **Performance (Splitting)** | Splitting a single A4-sized document image into at least 20 fragments completes under 60 seconds. | Automated benchmark script with sample dataset |
+| **NFR-02** | **Performance (Reconstruction)** | Reconstruction of a document with at least 20 fragments completes under 60 minutes. | Automated benchmark script with sample dataset |
 | **NFR-03** | **Scalability** | The system handles documents split into up to 100 fragments without crashing. | Stress tess |
 | **NFR-04** | **Usability** | A user with no prior training can complete a full split-and-reconstruct workflow. | Usability test |
 | **NFR-05** | **Error Handling** | 100% of invalid inputs produce a user-friendly error message. | Test covering all invalid input scenarios |
