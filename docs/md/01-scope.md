@@ -4,7 +4,6 @@
 **Faculty of Mathematics and Information Science**  
 **Warsaw University of Technology**  
 
----
 
 ## 1. Document Metadata and Change History
 
@@ -19,13 +18,11 @@
 * **Authors:** Martyna Sadowska, Hanna Szczerbińska, Zuzanna Zalewska
 * **Supervisor:** Janusz Rafałko, Ph.D.
 
----
 
 ## 2. One-Sentence Engineering / Research Problem Formulation
 
 > *“The objective of this project is to design, implement, and evaluate a system capable of reconstructing fragmented (shredded or torn) documents based on an image of their pieces, as well as artificially splitting a document into such pieces.”*
 
----
 
 ## 3. Project Scope: MVP vs. Future Work (Scope Management)
 
@@ -47,7 +44,6 @@
 2. Reconstruction of documents with missing fragments.
 3. Reconstruction of several documents whose fragments are combined. 
 
----
 
 ## 4. Functional Requirements (User Stories & Acceptance Criteria)
  
@@ -66,7 +62,6 @@
 > * **When:** The user uploads a file in an unsupported format or a file that doesn't contain any valid image files,
 > * **Then:** The system displays an error message indicating the accepted formats.
  
----
  
 ### **US-02: Splitting a document into fragments**
  
@@ -82,7 +77,6 @@
 > * **When:** The user is not satisfied with the result and clicks "Generate again",
 > * **Then:** The system generates a new set of borders using the currently selected algorithm and its parameters.
  
----
  
 ### **US-03: Generating a fragmented image**
  
@@ -98,7 +92,6 @@
 > * **When:** The user selects the option to save the final image and selects a disk location, 
 > * **Then:** The result is saved to the chosen disk location.
  
----
  
 ### **US-04: Extracting fragments from an input image**
  
@@ -115,7 +108,6 @@
 > * **When:** The image does not contain identifiable fragments,
 > * **Then:** The system displays an appropriate error message.
  
----
  
 ### **US-05: Reconstructing a document from fragments**
  
@@ -129,7 +121,6 @@
 > * **When:** The user selects an algorithm or chooses automatic selection, and starts reconstruction,
 > * **Then:** The system displays the reconstructed document image.
  
----
  
 ### **US-06: Iterative enhancement of reconstruction**
  
@@ -147,7 +138,6 @@
 > * **When:** The user selects "Accept",
 > * **Then:** The system allows saving the result locally.
 
----
 
 ## 5. Quantifiable Non-Functional Requirements (NFRs)
  
@@ -161,25 +151,23 @@
 | **NFR-06** | **Availability** | The system operates fully offline | Disconnected network test |
 | **NFR-07** | **Security** | All image processing is performed locally and no data is transmitted to external servers.  | Manual verification of network traffic |
 
----
 
 ## 6. Glossary
 
 | Term                                      | Definition                                                                                                                                                                                    |
-| :---------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| :---------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------: |
 | **APD (Archiwum Prac Dyplomowych)** | University Thesis Archive; official web portal of Warsaw University of Technology used for thesis submission, anti-plagiarism verification, and archiving.                                    |
 | **MVP (Minimum Viable Product)**    | The minimal functional scope of the project fulfilling all foundational requirements for academic project evaluation and defense.                                                             |
 | **Module 1**    | The document-splitting module, whose scope includes splitting an image into several fragments and arranging those fragments against a background.                                                              |
 | **Module 2**    | The document reconstruction module, whose scope includes extracting individual fragments from an image and reconstructing the original document based on the fragments' shape and content.                                                              |
 
----
 
-## 7. Preliminary Risk Register and Role Allocation
+## 7. Preliminary Risk Register
 
 ### 7.1 Project and Technical Risk Register
 
-|        ID        | Risk Event                                                   | Likelihood (L/M/H) | Impact (L/M/H/Crit) |  Owner  | Mitigation Strategy                                                                                                                 |
-| :--------------: | :----------------------------------------------------------- | :----------------: | :-----------------: | :------: | :---------------------------------------------------------------------------------------------------------------------------------- |
+|        ID        | Risk Event                               | Likelihood (L/M/H) | Impact (L/M/H/ Crit) |  Owner |Mitigation Strategy                                                    |
+| :-----------: | :---------------------------------------: | :----------: | :----------: | :-----------: | :-----------------------------------------------: |
 | **RSK-01** | **Team member illness / drop-out**                     |         L         |          H          | Everyone | Peer code review for every PR, pair programming on the critical path, modular architecture.                                               |
 | **RSK-02** | **Insufficient accuracy for the reconstructing algorithm**                     |         M         |          H          | Everyone | Explore different algorithms; if the problem persists focus on an analysis of algorithmic limitations and failure cases. |
 | **RSK-03** | **Environment incompatibility in the MiNI laboratory** |         M         |        Crit        | Martyna Sadowska | Test deployment on lab machines after implementing Module 1 and another after Module 2, not the night before acceptance. |
@@ -195,8 +183,6 @@
 | **RSK-13** | **To high difficulty of the chosen UI library** | L | L | Martyna Sadowska | Library change. |
 
 
----
-
 ### 7.1 Contingency Plans for High-Risk Modules (Plan B Protocols)
 
 ### **Contingency Protocol 1: Live Demo Failure during Defense**
@@ -211,10 +197,5 @@
 * **Plan B Trigger:** Restricted access to external datasets or unsatisfactory results from them.
 * **Plan B (Contingency):** Start constructing a custom dataset by shredding and scanning physical documents.
 
----
 
-## 8. Formal Supervisor Acceptance
 
-* [X] **Scope and MVP Sign-off:** The supervisor has reviewed the requirements specification and approves the MVP scope as the foundation for the engineering / master's degree project.
-
-**Supervisor Signature:** ............................................................ **Date:** October 18, 2026

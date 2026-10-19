@@ -13,7 +13,10 @@ fi
 
 pandoc "${FILES[@]}" -o engineering_project_report.docx
 
-pandoc "${FILES[@]}" -o engineering_project_report.pdf --pdf-engine=pdflatex 2>/dev/null || \
-pandoc "${FILES[@]}" -o engineering_project_report.pdf --pdf-engine=weasyprint
+pandoc "${FILES[@]}" \
+    -o engineering_project_report.pdf \
+    --pdf-engine=pdflatex \
+    -V geometry:margin=1.5cm
 
-pandoc "${FILES[@]}" -s -o engineering_project_report.tex
+pandoc "${FILES[@]}" -s -o engineering_project_report.tex  \
+    -V geometry:margin=1.5cm
