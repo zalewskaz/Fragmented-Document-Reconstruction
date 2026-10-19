@@ -4,6 +4,7 @@
 \documentclass[
 ]{article}
 \usepackage{xcolor}
+\usepackage[margin=1.5cm]{geometry}
 \usepackage{amsmath,amssymb}
 \setcounter{secnumdepth}{-\maxdimen} % remove section numbering
 \usepackage{iftex}
@@ -37,6 +38,8 @@
   \KOMAoptions{parskip=half}}
 \makeatother
 \usepackage{longtable,booktabs,array}
+\usepackage{caption}
+\captionsetup[table]{skip=6pt}
 \newcounter{none} % for unnumbered tables
 \usepackage{calc} % for calculating minipage widths
 % Correct order of tables after \paragraph or \subparagraph
@@ -44,9 +47,6 @@
 \makeatletter
 \patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
 \makeatother
-% Allow footnotes in longtable head/foot
-\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
-\makesavenoteenv{longtable}
 \setlength{\emergencystretch}{3em} % prevent overfull lines
 \providecommand{\tightlist}{%
   \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
@@ -72,8 +72,6 @@ Scope}\label{stage-1-document-requirements-specification-and-project-scope}
 \textbf{Engineering Project Documentation}\\
 \textbf{Faculty of Mathematics and Information Science}\\
 \textbf{Warsaw University of Technology}
-
-\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
 
 \subsection{1. Document Metadata and Change
 History}\label{document-metadata-and-change-history}
@@ -104,6 +102,8 @@ supervisor sign-off, problem formulation and project scope \\
 non-functional requirements \\
 \textbf{1.2} & 15.10.2026 & Martyna Sadowska & Added risk register and
 contingency plans \\
+\textbf{1.3} & 16.10.2026 & Hanna Szczerbinska & Expanded out of scope
+and glossary sections. \\
 \end{longtable}
 }
 
@@ -119,19 +119,15 @@ contingency plans \\
   \textbf{Supervisor:} Janusz Rafałko, Ph.D.
 \end{itemize}
 
-\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
-
 \subsection{2. One-Sentence Engineering / Research Problem
 Formulation}\label{one-sentence-engineering-research-problem-formulation}
 
 \begin{quote}
 \emph{``The objective of this project is to design, implement, and
 evaluate a system capable of reconstructing fragmented (shredded or
-torn) documents based on an image of their pieces, supported by a
-dedicated document-splitting module.''}
+torn) documents based on an image of their pieces, as well as
+artificially splitting a document into such pieces.''}
 \end{quote}
-
-\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
 
 \subsection{3. Project Scope: MVP vs.~Future Work (Scope
 Management)}\label{project-scope-mvp-vs.-future-work-scope-management}
@@ -154,7 +150,7 @@ Scope)}\label{minimum-viable-product-mvp-passing-scope}
     preview piece borders, re-generate if needed, and apply random
     rotations and non-overlapping background placement.
   \item
-    Saves the generated fragments locally.
+    Saves the final image of generated fragments locally.
   \end{itemize}
 \item
   \textbf{Document Reconstruction Module (Module 2):}
@@ -162,14 +158,15 @@ Scope)}\label{minimum-viable-product-mvp-passing-scope}
   \begin{itemize}
   \tightlist
   \item
-    Extracts individual fragments from an input image (single or batch
-    mode).
+    Supports single and batch mode processing.
   \item
-    Reconstructs original documents using user-selected or automated
-    algorithms.
+    Extracts individual fragments from an input image.
   \item
-    Displays the reconstructed output, allows iterative improvement
-    (adjusting time or algorithm), and saves the final result locally.
+    Reconstructs original documents using a variety of algorithms.
+  \item
+    Displays the reconstructed output, allows for iterative improvement
+    (adjusting either the processing time or algorithm used), and saves
+    the final result locally.
   \end{itemize}
 \end{enumerate}
 
@@ -184,9 +181,9 @@ Work)}\label{out-of-scope-future-work}
   applications.
 \item
   Reconstruction of documents with missing fragments.
+\item
+  Reconstruction of several documents whose fragments are combined.
 \end{enumerate}
-
-\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
 
 \subsection{4. Functional Requirements (User Stories \& Acceptance
 Criteria)}\label{functional-requirements-user-stories-acceptance-criteria}
@@ -222,15 +219,13 @@ splitting}}{US-01: Loading a document image for splitting}}\label{us-01-loading-
 \item
   \textbf{Scenario (Invalid input):}
 \item
-  \textbf{When:} The user uploads a file in an unsupported format or an
-  empty folder,
+  \textbf{When:} The user uploads a file in an unsupported format or a
+  file that doesn't contain any valid image files,
 \item
   \textbf{Then:} The system displays an error message indicating the
   accepted formats.
 \end{itemize}
 \end{quote}
-
-\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
 
 \subsubsection{\texorpdfstring{\textbf{US-02: Splitting a document into
 fragments}}{US-02: Splitting a document into fragments}}\label{us-02-splitting-a-document-into-fragments}
@@ -264,11 +259,9 @@ fragments}}{US-02: Splitting a document into fragments}}\label{us-02-splitting-a
   ``Generate again'',
 \item
   \textbf{Then:} The system generates a new set of borders using the
-  same or modified parameters.
+  currently selected algorithm and its parameters.
 \end{itemize}
 \end{quote}
-
-\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
 
 \subsubsection{\texorpdfstring{\textbf{US-03: Generating a fragmented
 image}}{US-03: Generating a fragmented image}}\label{us-03-generating-a-fragmented-image}
@@ -282,7 +275,8 @@ image}}{US-03: Generating a fragmented image}}\label{us-03-generating-a-fragment
   randomly rotate the pieces and arrange them on a plain background
   without overlapping,
 \item
-  \textbf{So that:} I get an image of document fragments for testing
+  \textbf{So that:} I get an image with document fragments which can
+  later be used for testing the document reconstruction module.
 \end{itemize}
 
 \begin{quote}
@@ -293,16 +287,18 @@ image}}{US-03: Generating a fragmented image}}\label{us-03-generating-a-fragment
 \item
   \textbf{Given:} The user has confirmed a set of piece borders,
 \item
-  \textbf{When:} The user sets parameters and confirms,
+  \textbf{When:} The user sets the parameters for arranging the pieces
+  and confirms them,
 \item
   \textbf{Then:} The system produces an image with all fragments placed
-  on the background without overlap.
+  on the background without any overlap.
 \item
-  \textbf{When:} The user can save the result to a chosen disk location.
+  \textbf{When:} The user selects the option to save the final image and
+  selects a disk location,
+\item
+  \textbf{Then:} The result is saved to the chosen disk location.
 \end{itemize}
 \end{quote}
-
-\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
 
 \subsubsection{\texorpdfstring{\textbf{US-04: Extracting fragments from
 an input
@@ -342,8 +338,6 @@ image}}{US-04: Extracting fragments from an input image}}\label{us-04-extracting
 \end{itemize}
 \end{quote}
 
-\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
-
 \subsubsection{\texorpdfstring{\textbf{US-05: Reconstructing a document
 from
 fragments}}{US-05: Reconstructing a document from fragments}}\label{us-05-reconstructing-a-document-from-fragments}
@@ -354,9 +348,9 @@ fragments}}{US-05: Reconstructing a document from fragments}}\label{us-05-recons
   \textbf{As a:} User of the document reconstruction module,
 \item
   \textbf{I want to:} Select a reconstruction algorithm (or let the
-  system choose automatically) and view the reconstructed document,
+  system choose one automatically) and view the reconstructed document,
 \item
-  \textbf{So that:} I can achieve the original document content in a
+  \textbf{So that:} I can receive the original document content in a
   legible form.
 \end{itemize}
 
@@ -374,8 +368,6 @@ fragments}}{US-05: Reconstructing a document from fragments}}\label{us-05-recons
   \textbf{Then:} The system displays the reconstructed document image.
 \end{itemize}
 \end{quote}
-
-\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
 
 \subsubsection{\texorpdfstring{\textbf{US-06: Iterative enhancement of
 reconstruction}}{US-06: Iterative enhancement of reconstruction}}\label{us-06-iterative-enhancement-of-reconstruction}
@@ -418,8 +410,6 @@ reconstruction}}{US-06: Iterative enhancement of reconstruction}}\label{us-06-it
 \end{itemize}
 \end{quote}
 
-\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
-
 \subsection{5. Quantifiable Non-Functional Requirements
 (NFRs)}\label{quantifiable-non-functional-requirements-nfrs}
 
@@ -444,10 +434,10 @@ Verification Method
 \bottomrule\noalign{}
 \endlastfoot
 \textbf{NFR-01} & \textbf{Performance (Splitting)} & Splitting a single
-A4-sized document image into at least 50 fragments completes under 60
+A4-sized document image into at least 20 fragments completes under 60
 seconds. & Automated benchmark script with sample dataset \\
 \textbf{NFR-02} & \textbf{Performance (Reconstruction)} & Reconstruction
-of a document with at least 50 fragments completes under 60 minutes. &
+of a document with at least 20 fragments completes under 60 minutes. &
 Automated benchmark script with sample dataset \\
 \textbf{NFR-03} & \textbf{Scalability} & The system handles documents
 split into up to 100 fragments without crashing. & Stress tess \\
@@ -464,18 +454,16 @@ verification of network traffic \\
 \end{longtable}
 }
 
-\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
-
 \subsection{6. Glossary}\label{glossary}
 
 {\def\LTcaptype{none} % do not increment counter
 \begin{longtable}[]{@{}
-  >{\raggedright\arraybackslash}p{(\linewidth - 2\tabcolsep) * \real{0.1783}}
-  >{\raggedright\arraybackslash}p{(\linewidth - 2\tabcolsep) * \real{0.8217}}@{}}
+  >{\centering\arraybackslash}p{(\linewidth - 2\tabcolsep) * \real{0.3615}}
+  >{\centering\arraybackslash}p{(\linewidth - 2\tabcolsep) * \real{0.6385}}@{}}
 \toprule\noalign{}
-\begin{minipage}[b]{\linewidth}\raggedright
+\begin{minipage}[b]{\linewidth}\centering
 Term
-\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
 Definition
 \end{minipage} \\
 \midrule\noalign{}
@@ -488,37 +476,42 @@ submission, anti-plagiarism verification, and archiving. \\
 \textbf{MVP (Minimum Viable Product)} & The minimal functional scope of
 the project fulfilling all foundational requirements for academic
 project evaluation and defense. \\
+\textbf{Module 1} & The document-splitting module, whose scope includes
+splitting an image into several fragments and arranging those fragments
+against a background. \\
+\textbf{Module 2} & The document reconstruction module, whose scope
+includes extracting individual fragments from an image and
+reconstructing the original document based on the fragments' shape and
+content. \\
 \end{longtable}
 }
 
-\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
-
-\subsection{7. Preliminary Risk Register and Role
-Allocation}\label{preliminary-risk-register-and-role-allocation}
+\subsection{7. Preliminary Risk
+Register}\label{preliminary-risk-register}
 
 \subsubsection{7.1 Project and Technical Risk
 Register}\label{project-and-technical-risk-register}
 
 {\def\LTcaptype{none} % do not increment counter
 \begin{longtable}[]{@{}
-  >{\centering\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.0635}}
-  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.2381}}
-  >{\centering\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.0714}}
-  >{\centering\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.0754}}
-  >{\centering\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.0317}}
-  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.5198}}@{}}
+  >{\centering\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.0929}}
+  >{\centering\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.2929}}
+  >{\centering\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.0857}}
+  >{\centering\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.0857}}
+  >{\centering\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.0929}}
+  >{\centering\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.3500}}@{}}
 \toprule\noalign{}
 \begin{minipage}[b]{\linewidth}\centering
 ID
-\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
 Risk Event
 \end{minipage} & \begin{minipage}[b]{\linewidth}\centering
 Likelihood (L/M/H)
 \end{minipage} & \begin{minipage}[b]{\linewidth}\centering
-Impact (L/M/H/Crit)
+Impact (L/M/H/ Crit)
 \end{minipage} & \begin{minipage}[b]{\linewidth}\centering
 Owner
-\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
 Mitigation Strategy
 \end{minipage} \\
 \midrule\noalign{}
@@ -571,8 +564,6 @@ L & L & Martyna Sadowska & Library change. \\
 \end{longtable}
 }
 
-\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
-
 \subsubsection{7.1 Contingency Plans for High-Risk Modules (Plan B
 Protocols)}\label{contingency-plans-for-high-risk-modules-plan-b-protocols}
 
@@ -608,22 +599,5 @@ Issues}}{Contingency Protocol 2: Literature Dataset Issues}}\label{contingency-p
   \textbf{Plan B (Contingency):} Start constructing a custom dataset by
   shredding and scanning physical documents.
 \end{itemize}
-
-\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
-
-\subsection{8. Formal Supervisor
-Acceptance}\label{formal-supervisor-acceptance}
-
-\begin{itemize}
-\tightlist
-\item[$\boxtimes$]
-  \textbf{Scope and MVP Sign-off:} The supervisor has reviewed the
-  requirements specification and approves the MVP scope as the
-  foundation for the engineering / master's degree project.
-\end{itemize}
-
-\textbf{Supervisor Signature:}
-\ldots\ldots\ldots\ldots\ldots\ldots\ldots\ldots\ldots\ldots\ldots\ldots\ldots\ldots\ldots\ldots\ldots\ldots\ldots\ldots{}
-\textbf{Date:} October 18, 2026
 
 \end{document}
