@@ -9,13 +9,13 @@
 
 |    Version    |    Date    |     Author     | Description of Change                                 |
 | :-----------: | :--------: | :------------: | :---------------------------------------------------- |
-| **1.0** | 13.10.2026 | Zuzanna Zalewska | Baseline version for supervisor sign-off, problem formulation and project scope              |
-| **1.1** | 14.10.2026 |   Zuzanna Zalewska   | Added functional non-functional requirements |
-| **1.2** | 15.10.2026 | Martyna Sadowska | Added risk register and contingency plans
-| **1.3** | 16.10.2026 | Hanna Szczerbinska | Expanded out of scope and glossary sections. 
+| **1.0** | 13.10.2026 | ZZ | Baseline version for supervisor sign-off, problem formulation and project scope              |
+| **1.1** | 14.10.2026 | ZZ | Added functional non-functional requirements |
+| **1.2** | 15.10.2026 | MS | Added risk register and contingency plans
+| **1.3** | 16.10.2026 | HS | Expanded out of scope and glossary sections. 
 
 * **Project Title:** *A System for Reconstructing Fragmented Documents Based on the Shape and Content of Their Parts*
-* **Authors:** Martyna Sadowska, Hanna Szczerbińska, Zuzanna Zalewska
+* **Authors:** Martyna Sadowska (MS), Hanna Szczerbińska (HS), Zuzanna Zalewska (ZZ)
 * **Supervisor:** Janusz Rafałko, Ph.D.
 
 
@@ -142,7 +142,7 @@
 ## 5. Quantifiable Non-Functional Requirements (NFRs)
  
 | ID | Category | Target Quantifiable Metric | Verification Method |
-| :-: | :--- | :--- | :--- |
+| :- | :--- | :--- | :--- |
 | **NFR-01** | **Performance (Splitting)** | Splitting a single A4-sized document image into at least 20 fragments completes under 60 seconds. | Automated benchmark script with sample dataset |
 | **NFR-02** | **Performance (Reconstruction)** | Reconstruction of a document with at least 20 fragments completes under 60 minutes. | Automated benchmark script with sample dataset |
 | **NFR-03** | **Scalability** | The system handles documents split into up to 100 fragments without crashing. | Stress tess |
@@ -152,38 +152,28 @@
 | **NFR-07** | **Security** | All image processing is performed locally and no data is transmitted to external servers.  | Manual verification of network traffic |
 
 
-## 6. Glossary
+## 6. Preliminary Risk Register
 
-| Term                                      | Definition                                                                                                                                                                                    |
-| :---------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------: |
-| **APD (Archiwum Prac Dyplomowych)** | University Thesis Archive; official web portal of Warsaw University of Technology used for thesis submission, anti-plagiarism verification, and archiving.                                    |
-| **MVP (Minimum Viable Product)**    | The minimal functional scope of the project fulfilling all foundational requirements for academic project evaluation and defense.                                                             |
-| **Module 1**    | The document-splitting module, whose scope includes splitting an image into several fragments and arranging those fragments against a background.                                                              |
-| **Module 2**    | The document reconstruction module, whose scope includes extracting individual fragments from an image and reconstructing the original document based on the fragments' shape and content.                                                              |
+### 6.1 Project and Technical Risk Register
 
-
-## 7. Preliminary Risk Register
-
-### 7.1 Project and Technical Risk Register
-
-|        ID        | Risk Event                               | Likelihood (L/M/H) | Impact (L/M/H/ Crit) |  Owner |Mitigation Strategy                                                    |
-| :-----------: | :---------------------------------------: | :----------: | :----------: | :-----------: | :-----------------------------------------------: |
+|        ID        | Risk Event                               | Likelihood (L/M/H) | Impact (L/M/ H/Crit) |  Owner | Mitigation Strategy                                                    |
+| :----------- | :--------------------------------------- | :---------- | :---------- | :----------- | :----------------------------------------------- |
 | **RSK-01** | **Team member illness / drop-out**                     |         L         |          H          | Everyone | Peer code review for every PR, pair programming on the critical path, modular architecture.                                               |
 | **RSK-02** | **Insufficient accuracy for the reconstructing algorithm**                     |         M         |          H          | Everyone | Explore different algorithms; if the problem persists focus on an analysis of algorithmic limitations and failure cases. |
-| **RSK-03** | **Environment incompatibility in the MiNI laboratory** |         M         |        Crit        | Martyna Sadowska | Test deployment on lab machines after implementing Module 1 and another after Module 2, not the night before acceptance. |
+| **RSK-03** | **Environment incompatibility in the MiNI laboratory** |         M         |        Crit        | MS | Test deployment on lab machines after implementing Module 1 and another after Module 2, not the night before acceptance. |
 | **RSK-04** | **Hardware failure (loss of data / code on laptop)**   |         M         |        Crit        | Everyone | Pushes to remote repository (GitHub) after each change.                         |
 | **RSK-05** | **Thesis writing workload accumulation in January**    |         H         |          H          | Everyone | Incremental drafting of thesis chapters; peer reviews within the team.                          |
-| **RSK-06** | **Unacceptably long execution time**                        |         H         |          M          | Hanna Szczerbińska | Implementing early stopping to the algorithms and accepting the worse results.                                 |
-| **RSK-07** | **Rotation of the fragments resulting in quality loss and document illegibility.** | M | M | Zuzanna Zalewska | Remembering the fragments' original visual, rotating it only once to match the found rotation and accepting the loss of information resulting in this operation. |
-| **RSK-08** | **Loss of information on the edges of fragments as a result of inacurate cut or assembling.** | M | L | Zuzanna Zalewska | Accepting the problem as an opportunity to test the algorithms in a real-world scenario (manual paper shredding). |
-| **RSK-09** | **Excessive RAM requirements for running the program smoothly** | M | M | Martyna Sadowska | Switching to the faculty MiNI GPU cluster |
-| **RSK-10** | **Excessive hyperparameter tuning time** | M | M | Hanna Szczerbińska | Finding a different algorithm or accepting the suboptimal hyperparameters. |
-| **RSK-11** | **No measurable metrics for assessing the accuracy of splitting and reconstructing the document.** | H | M | Zuzanna Zalewska | Relying solely on manual visual assessment. |
-| **RSK-12** | **Inability of the chosen UI library to meet our design requirements** | L | L | Martyna Sadowska | UI redesign or library change. |
-| **RSK-13** | **To high difficulty of the chosen UI library** | L | L | Martyna Sadowska | Library change. |
+| **RSK-06** | **Unacceptably long execution time**                        |         H         |          M          | HS | Implementing early stopping to the algorithms and accepting the worse results.                                 |
+| **RSK-07** | **Rotation of the fragments resulting in quality loss and document illegibility.** | M | M | ZZ | Remembering the fragments' original visual, rotating it only once to match the found rotation and accepting the loss of information resulting in this operation. |
+| **RSK-08** | **Loss of information on the edges of fragments as a result of inacurate cut or assembling.** | M | L | ZZ | Accepting the problem as an opportunity to test the algorithms in a real-world scenario (manual paper shredding). |
+| **RSK-09** | **Excessive RAM requirements for running the program smoothly** | M | M | MS | Switching to the faculty MiNI GPU cluster |
+| **RSK-10** | **Excessive hyperparameter tuning time** | M | M | HS | Finding a different algorithm or accepting the suboptimal hyperparameters. |
+| **RSK-11** | **No measurable metrics for assessing the accuracy of splitting and reconstructing the document.** | H | M | ZZ | Relying solely on manual visual assessment. |
+| **RSK-12** | **Inability of the chosen UI library to meet our design requirements** | L | L | MS | UI redesign or library change. |
+| **RSK-13** | **To high difficulty of the chosen UI library** | L | L | MS | Library change. |
 
 
-### 7.1 Contingency Plans for High-Risk Modules (Plan B Protocols)
+### 6.2 Contingency Plans for High-Risk Modules (Plan B Protocols)
 
 ### **Contingency Protocol 1: Live Demo Failure during Defense**
 
@@ -196,6 +186,19 @@
 * **Plan A (Primary):** Use existing datasets from literature.
 * **Plan B Trigger:** Restricted access to external datasets or unsatisfactory results from them.
 * **Plan B (Contingency):** Start constructing a custom dataset by shredding and scanning physical documents.
+
+## 7. Schedule and Role Allocation
+
+A detailed schedule, RACI Matrix, and corresponding Gantt Diagram are located in a dedicated document: [schedule_and_tasks_overview.xlsx](https://github.com/zalewskaz/Fragmented-Document-Reconstruction/blob/main/docs/schedule_and_tasks_overview.xlsx). 
+
+## 8. Glossary
+
+| Term                                      | Definition                                                                                                                                                                                    |
+| :--------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------- |
+| **APD (Archiwum Prac Dyplomowych)** | University Thesis Archive; official web portal of Warsaw University of Technology used for thesis submission, anti-plagiarism verification, and archiving.                                    |
+| **MVP (Minimum Viable Product)**    | The minimal functional scope of the project fulfilling all foundational requirements for academic project evaluation and defense.                                                             |
+| **Module 1**    | The document-splitting module, whose scope includes splitting an image into several fragments and arranging those fragments against a background.                                                              |
+| **Module 2**    | The document reconstruction module, whose scope includes extracting individual fragments from an image and reconstructing the original document based on the fragments' shape and content.                                                              |
 
 
 
