@@ -2,8 +2,10 @@ from pathlib import Path
 import tkinter as tk
 from tkinter import filedialog, messagebox
 import customtkinter as ctk
+from PIL import Image
+import cv2  
+from src.utils.io import get_valid_paths, read_image, InvalidImageInputError
 
-# Appearance settings
 ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("dark-blue")
 
@@ -13,7 +15,6 @@ class MainWindow(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        # Window configuration & centering
         self.title("Fragmented Document Reconstruction")
 
         width, height = 1200, 750
@@ -25,159 +26,132 @@ class MainWindow(ctk.CTk):
         self.geometry(f"{width}x{height}+{x}+{y}")
         self.minsize(1000, 650)
 
-        # State management
         self.loaded_image_path = None
+        self.save_location_path = None
+        self.current_image_display = None 
 
-        # Main grid setup
-        self.grid_rowconfigure(0, weight=1)
-        self.grid_columnconfigure(0, weight=1)  # Content area
-        self.grid_columnconfigure(1, weight=0)  # Sidebar
+        self.grid_rowconfigure(0, weight=0)  
+        self.grid_rowconfigure(1, weight=1)  
+        self.grid_columnconfigure(0, weight=1)  
+        self.grid_columnconfigure(1, weight=0)  
 
-        # Initialize interface components
-        self.setup_system_menu()
+        self.setup_top_toolbar()
         self.setup_content_area()
         self.setup_sidebar()
 
-    def setup_system_menu(self):
-        """Creates the native system menu bar."""
-        self.menubar = tk.Menu(self)
+    def setup_top_toolbar(self):
+        self.toolbar_frame = ctk.CTkFrame(self, height=65, corner_radius=0, fg_color=("#2b2b2b", "#1f1f1f"))
+        self.toolbar_frame.grid(row=0, column=0, columnspan=2, sticky="ew")
 
-        # --- MENU "FILE" ---
-        self.file_menu = tk.Menu(self.menubar, tearoff=0)
-
-        # Submenu: Source (2 choices)
-        self.source_submenu = tk.Menu(self.file_menu, tearoff=0)
-        self.source_submenu.add_command(
-            label="Single Image File",
-            command=lambda: self.load_data("Single Image File"),
+        self.action_menu = ctk.CTkOptionMenu(
+            self.toolbar_frame,
+            values=[
+                "Select File",
+                "Select Directory",
+                "Choose Save Location"
+            ],
+            command=self.handle_menu_action,
+            width=180
         )
-        self.source_submenu.add_command(
-            label="Image Folder", command=lambda: self.load_data("Image Folder")
+        self.action_menu.set("File Actions...")
+        self.action_menu.pack(side="left", padx=(20, 10), pady=15)
+
+        self.module_switch = ctk.CTkSegmentedButton(
+            self.toolbar_frame,
+            values=["Module 1: Cutter", "Module 2: Assembler"],
+            command=self.switch_view
         )
-
-        # Add Source submenu to File
-        self.file_menu.add_cascade(label="Source", menu=self.source_submenu)
-        self.file_menu.add_separator()
-
-        # Save & Save As (Disabled by default)
-        self.file_menu.add_command(
-            label="Save", command=self.save_file, state=tk.DISABLED
-        )
-        self.file_menu.add_command(
-            label="Save As...", command=self.save_file_as, state=tk.DISABLED
-        )
-
-        self.file_menu.add_separator()
-        self.file_menu.add_command(label="Exit", command=self.quit)
-
-        # Add File menu to MenuBar
-        self.menubar.add_cascade(label="File", menu=self.file_menu)
-
-        # Apply MenuBar to Window
-        self.config(menu=self.menubar)
+        self.module_switch.pack(side="left", padx=10, pady=15)
+        self.module_switch.set("Module 1: Cutter")
 
     def setup_sidebar(self):
-        """Creates the right sidebar with module navigation."""
         self.sidebar_frame = ctk.CTkFrame(self, width=220, corner_radius=0)
-        self.sidebar_frame.grid(row=0, column=1, sticky="nsew")
-        self.sidebar_frame.grid_rowconfigure(3, weight=1)
+        self.sidebar_frame.grid(row=1, column=1, sticky="nsew")
+        self.sidebar_frame.grid_rowconfigure(1, weight=1)
 
         self.logo_label = ctk.CTkLabel(
             self.sidebar_frame,
             text="Fragmented Docs",
             font=ctk.CTkFont(size=18, weight="bold"),
         )
-        self.logo_label.grid(row=0, column=0, padx=20, pady=(20, 10))
-
-        self.btn_cutter = ctk.CTkButton(
-            self.sidebar_frame,
-            text="Module 1: Cutter",
-            command=lambda: self.switch_view("Module 1: Cutter"),
-        )
-        self.btn_cutter.grid(row=1, column=0, padx=20, pady=10)
-
-        self.btn_assembler = ctk.CTkButton(
-            self.sidebar_frame,
-            text="Module 2: Assembler",
-            command=lambda: self.switch_view("Module 2: Assembler"),
-        )
-        self.btn_assembler.grid(row=2, column=0, padx=20, pady=10)
+        self.logo_label.grid(row=0, column=0, padx=20, pady=(20, 15))
 
     def setup_content_area(self):
-        """Creates the main workspace."""
         self.content_frame = ctk.CTkFrame(self, fg_color="transparent")
-        self.content_frame.grid(row=0, column=0, sticky="nsew", padx=20, pady=20)
+        self.content_frame.grid(row=1, column=0, sticky="nsew", padx=20, pady=20)
 
         self.content_frame.grid_rowconfigure(0, weight=1)
         self.content_frame.grid_columnconfigure(0, weight=1)
 
-        self.welcome_label = ctk.CTkLabel(
+        self.display_label = ctk.CTkLabel(
             self.content_frame,
-            text="Go to File -> Source to select your document file or folder.",
+            text="Use the top toolbar to select files/directories and switch between modules.",
             font=ctk.CTkFont(size=16),
             justify="center",
         )
-        self.welcome_label.grid(row=0, column=0)
+        self.display_label.grid(row=0, column=0)
 
     def switch_view(self, view_name: str):
-        """Switches active module view."""
-        self.welcome_label.configure(text=f"Active View: {view_name}")
+        pass
 
-    def load_data(self, source_type: str):
-        """Handles opening files/folders with root/data default directory."""
+    def handle_menu_action(self, choice: str):
         project_root = Path(__file__).resolve().parent.parent.parent
         data_dir = project_root / "data"
-
-        # Ensure data directory exists so tkinter doesn't complain about invalid initialdir
         data_dir.mkdir(parents=True, exist_ok=True)
 
-        if source_type == "Single Image File":
-            file_path = filedialog.askopenfilename(
-                initialdir=data_dir,
-                filetypes=[
-                    (
-                        "Image / Document Files",
-                        "*.png *.jpg *.jpeg *.bmp *.tif *.tiff",
-                    ),
-                    ("All Files", "*.*"),
-                ],
-            )
-            if file_path:
-                self.loaded_image_path = file_path
-                self.welcome_label.configure(
-                    text=f"Loaded Image:\n{file_path}"
+        try:
+            if choice == "Select File":
+                file_path = filedialog.askopenfilename(
+                    initialdir=data_dir,
+                    filetypes=[
+                        ("Image / Document Files", "*.png *.jpg *.jpeg *.bmp *.tif *.tiff"),
+                        ("All Files", "*.*"),
+                    ],
                 )
-                self.enable_save_options()
+                if file_path:
+                    valid_paths = get_valid_paths(file_path)
+                    if valid_paths:
+                        self.loaded_image_path = valid_paths[0]
+                        opencv_image = read_image(self.loaded_image_path)
+                        self.render_image_on_ui(opencv_image)
 
-        elif source_type == "Image Folder":
-            folder_path = filedialog.askdirectory(initialdir=data_dir)
-            if folder_path:
-                self.loaded_image_path = folder_path
-                self.welcome_label.configure(
-                    text=f"Loaded Folder:\n{folder_path}"
+            elif choice == "Select Directory":
+                folder_path = filedialog.askdirectory(initialdir=data_dir)
+                if folder_path:
+                    valid_paths = get_valid_paths(folder_path)
+                    if valid_paths:
+                        self.loaded_image_path = valid_paths[0]
+                        opencv_image = read_image(self.loaded_image_path)
+                        self.render_image_on_ui(opencv_image)
+                        messagebox.showinfo("Folder Loaded", f"Loaded folder successfully. Found {len(valid_paths)} valid images.")
+
+            elif choice == "Choose Save Location":
+                save_path = filedialog.asksaveasfilename(
+                    initialdir=data_dir,
+                    defaultextension=".png",
+                    filetypes=[
+                        ("PNG Image", "*.png"),
+                        ("JPEG Image", "*.jpg"),
+                        ("TIFF Image", "*.tif *.tiff"),
+                    ],
                 )
-                self.enable_save_options()
+                if save_path:
+                    self.save_location_path = save_path
 
-    def enable_save_options(self):
-        """Enables Save and Save As in File menu."""
-        self.file_menu.entryconfig("Save", state=tk.NORMAL)
-        self.file_menu.entryconfig("Save As...", state=tk.NORMAL)
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
 
-    def save_file(self):
-        """Save action handler."""
-        messagebox.showinfo("Save", "Document saved successfully!")
+        self.action_menu.set("File Actions...")
 
-    def save_file_as(self):
-        """Save As action handler."""
-        save_path = filedialog.asksaveasfilename(
-            defaultextension=".png",
-            filetypes=[
-                ("PNG Image", "*.png"),
-                ("JPEG Image", "*.jpg"),
-                ("TIFF Image", "*.tif *.tiff"),
-            ],
-        )
-        if save_path:
-            messagebox.showinfo(
-                "Save As", f"Document saved as:\n{save_path}"
-            )
+    def render_image_on_ui(self, cv_img):
+        """Konwertuje macierz OpenCV (BGR) na format obsługiwany przez CustomTkinter (RGB -> Pillow -> CTkImage) i wyświetla."""
+        rgb_image = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
+        pil_image = Image.fromarray(rgb_image)
+
+
+        max_width, max_height = 800, 550
+        pil_image.thumbnail((max_width, max_height))
+
+        self.current_image_display = ctk.CTkImage(light_image=pil_image, dark_image=pil_image, size=pil_image.size)
+
+        self.display_label.configure(text="", image=self.current_image_display)
