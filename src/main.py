@@ -1,3 +1,5 @@
+# inicjalizuje UI i tylko tyle
+
 def main():
     pass
 
