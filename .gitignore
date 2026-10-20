@@ -1,0 +1,13 @@
+# Środowisko wirtualne
+venv/
+env/
+ENV/
+
+# Pliki tymczasowe Pythona
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Pliki systemowe
+.DS_Store
+Thumbs.db
