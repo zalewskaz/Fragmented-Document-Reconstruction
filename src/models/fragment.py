@@ -1,0 +1,1 @@
+# tu bedzie klasa na frgament
