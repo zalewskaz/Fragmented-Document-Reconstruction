@@ -181,14 +181,14 @@
 ### **Contingency Protocol 1: Live Demo Failure during Defense**
 
 * **Plan A (Primary):** Run a pre-recorded video demo with live narration during the 10-minute presentation.
-* **Plan B Trigger:** Projector connectivity issues, network failure.
+* **Plan B Trigger:** Sound system issues, network failure.
 * **Plan B (Contingency):** Immediately switch to a presentation with screenshots showcasing the application's core functionality.
 
 ### **Contingency Protocol 2: Literature Dataset Issues**
 
 * **Plan A (Primary):** Use existing datasets from literature.
 * **Plan B Trigger:** Restricted access to external datasets or unsatisfactory results from them.
-* **Plan B (Contingency):** Start constructing a custom dataset by shredding and scanning physical documents.
+* **Plan B (Contingency):** Construct a custom dataset by shredding and scanning physical documents.
 
 ## 7. Schedule and Role Allocation
 
