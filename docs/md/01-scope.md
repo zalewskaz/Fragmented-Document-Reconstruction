@@ -12,11 +12,14 @@
 | **1.0** | 13.10.2026 | ZZ | Baseline version for supervisor sign-off, problem formulation and project scope              |
 | **1.1** | 14.10.2026 | ZZ | Added functional non-functional requirements |
 | **1.2** | 15.10.2026 | MS | Added risk register and contingency plans
-| **1.3** | 16.10.2026 | HS | Expanded out of scope and glossary sections. 
+| **1.3** | 16.10.2026 | HS | Expanded out of scope and glossary sections 
+| **1.4** | 18.10.2026 | ZZ | Created schedule
+| **1.5** | 19.10.2026 | HS | Assigned roles to RACI matrix
+| **1.6** | 20.10.2026 | MS | Added schedule and RACI matrix to the document
 
 * **Project Title:** *A System for Reconstructing Fragmented Documents Based on the Shape and Content of Their Parts*
 * **Authors:** Martyna Sadowska (MS), Hanna Szczerbińska (HS), Zuzanna Zalewska (ZZ)
-* **Supervisor:** Janusz Rafałko, Ph.D.
+* **Supervisor:** Janusz Rafałko, Ph.D. (JR)
 
 
 ## 2. One-Sentence Engineering / Research Problem Formulation
@@ -189,7 +192,98 @@
 
 ## 7. Schedule and Role Allocation
 
-A detailed schedule, RACI Matrix, and corresponding Gantt Diagram are located in a dedicated document: [schedule_and_tasks_overview.xlsx](https://github.com/zalewskaz/Fragmented-Document-Reconstruction/blob/main/docs/schedule_and_tasks_overview.xlsx). 
+The Gantt Diagram corresponding to the schedule is located in a dedicated document: [schedule_and_tasks_overview.xlsx](https://github.com/zalewskaz/Fragmented-Document-Reconstruction/blob/main/docs/schedule_and_tasks_overview.xlsx). 
+
+### 7.1 Schedule
+
+| WBS   | Task                                                                                         | Duration (Days) | Start Date | End Date  |
+|-------|----------------------------------------------------------------------------------------------|-----------------|------------|-----------|
+| **1** | **Project Planning & Architecture**                                                          | **13**          | **11-10**  | **23-10** |
+| 1.1   | Define business objective                                                                    | 3               | 11-10      | 13-10     |
+| 1.2   | Define system vision                                                                         | 3               | 11-10      | 13-10     |
+| 1.3   | Define functional requirements                                                               | 4               | 13-10      | 16-10     |
+| 1.4   | Define non-functional requirements                                                           | 3               | 14-10      | 16-10     |
+| 1.5   | Perform risk analysis                                                                        | 2               | 14-10      | 15-10     |
+| 1.6   | Prepare project schedule and divide tasks between team members                               | 4               | 16-10      | 19-10     |
+| 1.7   | Decide on the formats in which data will be stored and handled                               | 1               | 16-10      | 16-10     |
+| 1.8   | Define system architecture and main classes                                                  | 5               | 19-10      | 23-10     |
+| 1.9   | Decide on main dependencies (e.g. external libraries)                                        | 8               | 13-10      | 20-10     |
+| 1.10  | Prepare a shortlist of algorithms to be implemented for each module                          | 11              | 13-10      | 23-10     |
+| **2** | **Module 1: Document Fragmentation**                                                         | **13**          | **19-10**  | **31-10** |
+| 2.1   | Implement input handling                                                                     | 2               | 19-10      | 20-10     |
+| 2.2   | Implement fragmentation algorithms                                                           | 10              | 19-10      | 28-10     |
+| 2.3   | Implement the random rotation of each fragment                                               | 3               | 21-10      | 23-10     |
+| 2.4   | Implement fragment placement on background                                                   | 3               | 21-10      | 23-10     |
+| 2.5   | Implement image export                                                                       | 2               | 23-10      | 24-10     |
+| 2.6   | Write unit tests for module 1                                                                | 3               | 26-10      | 28-10     |
+| 2.7   | Validate results through subjective observation                                              | 9               | 23-10      | 31-10     |
+| **3** | **Module 2A: Fragment Extraction**                                                           | **7**           | **1-11**   | **7-11**  |
+| 3.1   | Implement the algorithm for finding fragment borders                                         | 4               | 1-11       | 4-11      |
+| 3.2   | Implement extracting the fragments into separate objects                                     | 2               | 4-11       | 5-11      |
+| 3.3   | Write unit tests for module 2A                                                               | 2               | 6-11       | 7-11      |
+| **4** | **Module 2B: Document Reconstruction**                                                       | **17**          | **8-11**   | **24-11** |
+| 4.1   | Implement  shape-based reconstruction algorithms                                             | 13              | 8-11       | 20-11     |
+| 4.2   | Implement content-based reconstruction algorithms                                            | 13              | 8-11       | 20-11     |
+| 4.3   | Write unite tests for module 2B                                                              | 4               | 21-11      | 24-11     |
+| **5** | **Benchmarking**                                                                             | **6**           | **25-11**  | **30-11** |
+| 5.1   | Implement the extraction of text from a reconstructed document                               | 3               | 25-11      | 27-11     |
+| 5.2   | Prepare benchmarking scenarios for various input types                                       | 3               | 25-11      | 27-11     |
+| 5.3   | Perform automated benchmarking of reconstruction algorithms using automated text extraction  | 3               | 27-11      | 29-11     |
+| 5.4   | Perform manual benchmarking of reconstruction algorithms based on final document readability | 4               | 26-11      | 29-11     |
+| 5.5   | Construct heuristics for algorithm selection                                                 | 2               | 29-11      | 30-11     |
+| **6** | **Integration, UI**                                                                          | **34**          | **1-11**   | **4-12**  |
+| 6.1   | Integrate modules into an unified pipeline                                                   | 4               | 1-12       | 4-12      |
+| 6.2   | Building UI                                                                                  | 30              | 1-11       | 30-11     |
+| **7** | **Documentation & Thesis writing**                                                           | **62**          | **1-12**   | **31-01** |
+| 7.1   | Compile existing documentation and benchmarking results into initial thesis draft            | 20              | 1-12       | 20-12     |
+| 7.2   | Write core chapters for thesis                                                               | 38              | 1-12       | 7-01      |
+| 7.3   | Final buffer time, thesis polishing and defense presentation                                 | 25              | 7-01       | 31-01     |
+
+### 7.2 RACI Matrix
+
+| WBS   | Responsible | Accountable | Consulted | Informed |
+|-------|-------------|-------------|-----------|----------|
+| **1** |             |             |           |          |
+| 1.1   | MS, HS, ZZ  | HS          | JR        | ---      |
+| 1.2   | MS, HS, ZZ  | HS          | ---       | JR       |
+| 1.3   | MS, HS      | HS          | ZZ        | JR       |
+| 1.4   | ZZ          | ZZ          | MS, HS    | JR       |
+| 1.5   | MS, ZZ      | ZZ          | HS        | JR       |
+| 1.6   | HS, ZZ      | ZZ          | MS        | ---      |
+| 1.7   | MS, HS      | MS          | ZZ        | ---      |
+| 1.8   | MS, HS, ZZ  | MS          | ---       | ---      |
+| 1.9   | MS          | MS          | HS, ZZ    | ---      |
+| 1.10  | MS, HS, ZZ  | MS          | JR        | ---      |
+| **2** |             |             |           |          |
+| 2.1   | ZZ          | ZZ          | MS, HS    | ---      |
+| 2.2   | MS, HS, ZZ  | HS          | ---       | ---      |
+| 2.3   | MS          | MS          | HS, ZZ    | ---      |
+| 2.4   | HS          | HS          | MS, ZZ    | ---      |
+| 2.5   | ZZ          | ZZ          | MS, HS    | ---      |
+| 2.6   | MS          | MS          | HS, ZZ    | ---      |
+| 2.7   | HS          | HS          | MS, ZZ    | JR       |
+| **3** |             |             |           |          |
+| 3.1   | HS          | HS          | MS, ZZ    | ---      |
+| 3.2   | MS          | MS          | HS, ZZ    | ---      |
+| 3.3   | ZZ          | ZZ          | MS, HS    | ---      |
+| **4** |             |             |           |          |
+| 4.1   | MS, HS, ZZ  | HS          | ---       | JR       |
+| 4.2   | MS, HS, ZZ  | MS          | ---       | JR       |
+| 4.3   | ZZ          | ZZ          | MS, HS    | ---      |
+| **5** |             |             |           |          |
+| 5.1   | ZZ          | ZZ          | MS, HS    | ---      |
+| 5.2   | HS          | HS          | MS, ZZ    | ---      |
+| 5.3   | MS          | MS          | HS, ZZ    | ---      |
+| 5.4   | MS, HS, ZZ  | ZZ          | ---       | ---      |
+| 5.5   | HS          | HS          | MS, ZZ    | JR       |
+| **6** |             |             |           |          |
+| 6.1   | ZZ          | ZZ          | MS, HS    | JR       |
+| 6.2   | MS, HS, ZZ  | MS          | HS, ZZ    | JR       |
+| **7** |             |             |           |          |
+| 7.1   | MS, HS, ZZ  | ZZ          | ---       | ---      |
+| 7.2   | MS, HS, ZZ  | HS          | JR        | ---      |
+| 7.3   | MS, HS, ZZ  | MS          | ---       | JR       |
+|       |             |             |           |          |
 
 ## 8. Glossary
 
