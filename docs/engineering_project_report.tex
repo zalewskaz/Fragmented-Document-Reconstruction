@@ -104,7 +104,11 @@ requirements \\
 \textbf{1.2} & 15.10.2026 & MS & Added risk register and contingency
 plans \\
 \textbf{1.3} & 16.10.2026 & HS & Expanded out of scope and glossary
-sections. \\
+sections \\
+\textbf{1.4} & 18.10.2026 & ZZ & Created schedule \\
+\textbf{1.5} & 19.10.2026 & HS & Assigned roles to RACI matrix \\
+\textbf{1.6} & 20.10.2026 & MS & Added schedule and RACI matrix to the
+document \\
 \end{longtable}
 }
 
@@ -117,7 +121,7 @@ sections. \\
   \textbf{Authors:} Martyna Sadowska (MS), Hanna Szczerbińska (HS),
   Zuzanna Zalewska (ZZ)
 \item
-  \textbf{Supervisor:} Janusz Rafałko, Ph.D.
+  \textbf{Supervisor:} Janusz Rafałko, Ph.D.~(JR)
 \end{itemize}
 
 \subsection{2. One-Sentence Engineering / Research Problem
@@ -571,9 +575,155 @@ Issues}}{Contingency Protocol 2: Literature Dataset Issues}}\label{contingency-p
 \subsection{7. Schedule and Role
 Allocation}\label{schedule-and-role-allocation}
 
-A detailed schedule, RACI Matrix, and corresponding Gantt Diagram are
-located in a dedicated document:
+The Gantt Diagram corresponding to the schedule is located in a
+dedicated document:
 \href{https://github.com/zalewskaz/Fragmented-Document-Reconstruction/blob/main/docs/schedule_and_tasks_overview.xlsx}{schedule\_and\_tasks\_overview.xlsx}.
+
+\subsubsection{7.1 Schedule}\label{schedule}
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.0496}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.6667}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.1206}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.0851}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.0780}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+WBS
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Task
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Duration (Days)
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Start Date
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+End Date
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\textbf{1} & \textbf{Project Planning \& Architecture} & \textbf{13} &
+\textbf{11-10} & \textbf{23-10} \\
+1.1 & Define business objective & 3 & 11-10 & 13-10 \\
+1.2 & Define system vision & 3 & 11-10 & 13-10 \\
+1.3 & Define functional requirements & 4 & 13-10 & 16-10 \\
+1.4 & Define non-functional requirements & 3 & 14-10 & 16-10 \\
+1.5 & Perform risk analysis & 2 & 14-10 & 15-10 \\
+1.6 & Prepare project schedule and divide tasks between team members & 4
+& 16-10 & 19-10 \\
+1.7 & Decide on the formats in which data will be stored and handled & 1
+& 16-10 & 16-10 \\
+1.8 & Define system architecture and main classes & 5 & 19-10 & 23-10 \\
+1.9 & Decide on main dependencies (e.g.~external libraries) & 8 & 13-10
+& 20-10 \\
+1.10 & Prepare a shortlist of algorithms to be implemented for each
+module & 11 & 13-10 & 23-10 \\
+\textbf{2} & \textbf{Module 1: Document Fragmentation} & \textbf{13} &
+\textbf{19-10} & \textbf{31-10} \\
+2.1 & Implement input handling & 2 & 19-10 & 20-10 \\
+2.2 & Implement fragmentation algorithms & 10 & 19-10 & 28-10 \\
+2.3 & Implement the random rotation of each fragment & 3 & 21-10 &
+23-10 \\
+2.4 & Implement fragment placement on background & 3 & 21-10 & 23-10 \\
+2.5 & Implement image export & 2 & 23-10 & 24-10 \\
+2.6 & Write unit tests for module 1 & 3 & 26-10 & 28-10 \\
+2.7 & Validate results through subjective observation & 9 & 23-10 &
+31-10 \\
+\textbf{3} & \textbf{Module 2A: Fragment Extraction} & \textbf{7} &
+\textbf{1-11} & \textbf{7-11} \\
+3.1 & Implement the algorithm for finding fragment borders & 4 & 1-11 &
+4-11 \\
+3.2 & Implement extracting the fragments into separate objects & 2 &
+4-11 & 5-11 \\
+3.3 & Write unit tests for module 2A & 2 & 6-11 & 7-11 \\
+\textbf{4} & \textbf{Module 2B: Document Reconstruction} & \textbf{17} &
+\textbf{8-11} & \textbf{24-11} \\
+4.1 & Implement~ shape-based reconstruction algorithms & 13 & 8-11 &
+20-11 \\
+4.2 & Implement content-based reconstruction algorithms & 13 & 8-11 &
+20-11 \\
+4.3 & Write unite tests for module 2B & 4 & 21-11 & 24-11 \\
+\textbf{5} & \textbf{Benchmarking} & \textbf{6} & \textbf{25-11} &
+\textbf{30-11} \\
+5.1 & Implement the extraction of text from a reconstructed document & 3
+& 25-11 & 27-11 \\
+5.2 & Prepare benchmarking scenarios for various input types & 3 & 25-11
+& 27-11 \\
+5.3 & Perform automated benchmarking of reconstruction algorithms using
+automated text extraction & 3 & 27-11 & 29-11 \\
+5.4 & Perform manual benchmarking of reconstruction algorithms based on
+final document readability & 4 & 26-11 & 29-11 \\
+5.5 & Construct heuristics for algorithm selection & 2 & 29-11 &
+30-11 \\
+\textbf{6} & \textbf{Integration, UI} & \textbf{34} & \textbf{1-11} &
+\textbf{4-12} \\
+6.1 & Integrate modules into an unified pipeline & 4 & 1-12 & 4-12 \\
+6.2 & Building UI & 30 & 1-11 & 30-11 \\
+\textbf{7} & \textbf{Documentation \& Thesis writing} & \textbf{62} &
+\textbf{1-12} & \textbf{31-01} \\
+7.1 & Compile existing documentation and benchmarking results into
+initial thesis draft & 20 & 1-12 & 20-12 \\
+7.2 & Write core chapters for thesis & 38 & 1-12 & 7-01 \\
+7.3 & Final buffer time, thesis polishing and defense presentation & 25
+& 7-01 & 31-01 \\
+\end{longtable}
+}
+
+\subsubsection{7.2 RACI Matrix}\label{raci-matrix}
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}lllll@{}}
+\toprule\noalign{}
+WBS & Responsible & Accountable & Consulted & Informed \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\textbf{1} & & & & \\
+1.1 & MS, HS, ZZ & HS & JR & --- \\
+1.2 & MS, HS, ZZ & HS & --- & JR \\
+1.3 & MS, HS & HS & ZZ & JR \\
+1.4 & ZZ & ZZ & MS, HS & JR \\
+1.5 & MS, ZZ & ZZ & HS & JR \\
+1.6 & HS, ZZ & ZZ & MS & --- \\
+1.7 & MS, HS & MS & ZZ & --- \\
+1.8 & MS, HS, ZZ & MS & --- & --- \\
+1.9 & MS & MS & HS, ZZ & --- \\
+1.10 & MS, HS, ZZ & MS & JR & --- \\
+\textbf{2} & & & & \\
+2.1 & ZZ & ZZ & MS, HS & --- \\
+2.2 & MS, HS, ZZ & HS & --- & --- \\
+2.3 & MS & MS & HS, ZZ & --- \\
+2.4 & HS & HS & MS, ZZ & --- \\
+2.5 & ZZ & ZZ & MS, HS & --- \\
+2.6 & MS & MS & HS, ZZ & --- \\
+2.7 & HS & HS & MS, ZZ & JR \\
+\textbf{3} & & & & \\
+3.1 & HS & HS & MS, ZZ & --- \\
+3.2 & MS & MS & HS, ZZ & --- \\
+3.3 & ZZ & ZZ & MS, HS & --- \\
+\textbf{4} & & & & \\
+4.1 & MS, HS, ZZ & HS & --- & JR \\
+4.2 & MS, HS, ZZ & MS & --- & JR \\
+4.3 & ZZ & ZZ & MS, HS & --- \\
+\textbf{5} & & & & \\
+5.1 & ZZ & ZZ & MS, HS & --- \\
+5.2 & HS & HS & MS, ZZ & --- \\
+5.3 & MS & MS & HS, ZZ & --- \\
+5.4 & MS, HS, ZZ & ZZ & --- & --- \\
+5.5 & HS & HS & MS, ZZ & JR \\
+\textbf{6} & & & & \\
+6.1 & ZZ & ZZ & MS, HS & JR \\
+6.2 & MS, HS, ZZ & MS & HS, ZZ & JR \\
+\textbf{7} & & & & \\
+7.1 & MS, HS, ZZ & ZZ & --- & --- \\
+7.2 & MS, HS, ZZ & HS & JR & --- \\
+7.3 & MS, HS, ZZ & MS & --- & JR \\
+& & & & \\
+\end{longtable}
+}
 
 \subsection{8. Glossary}\label{glossary}
 
