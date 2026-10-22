@@ -46,7 +46,9 @@ def get_valid_paths(path_str: str) -> List[Path]:
     return valid_paths
 
 def read_image(path_obj: Path) -> np.ndarray:
-    array_img = cv2.imread(str(path_obj))
+    # array_img = cv2.imread(str(path_obj))
+    # loads images from paths with characters out of ASCII range
+    array_img = cv2.imdecode(np.fromfile(str(path_obj), dtype=np.uint8), cv2.IMREAD_COLOR)
             
     if array_img is None:
         raise InvalidImageInputError(f"Failed to read the first image: {path_obj.name}")
