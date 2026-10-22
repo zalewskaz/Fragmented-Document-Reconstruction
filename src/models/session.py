@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import List, Optional
 import numpy as np
+from .parameters_enums import SplittingMethod
 
 @dataclass
 class ProjectSession:
@@ -9,3 +10,4 @@ class ProjectSession:
     binarized_image: Optional[np.ndarray] = None
     mask: Optional[np.ndarray] = None
     # puzzle_pieces: List[PuzzlePiece] = None
+    splitting_method: Optional[SplittingMethod] = None
