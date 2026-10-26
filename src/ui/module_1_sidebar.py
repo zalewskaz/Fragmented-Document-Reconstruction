@@ -121,6 +121,36 @@ class SidebarFrame(ctk.CTkFrame):
 
                 self.stripes_n_entry.bind("<KeyRelease>", on_n_typing)
                 self.stripes_width_entry.bind("<KeyRelease>", on_width_typing)
+
+            case SplittingMethod.RANDOM_VERTICAL | SplittingMethod.RANDOM_HORIZONTAL:
+                ctk.CTkLabel(
+                    self.dynamic_params_frame,
+                    text="Random number of stripes"
+                ).grid(row=0, column=0, padx=(0, 10), pady=5, sticky="w")
+
+                def toggle_stripes_entry():
+                    if self.random_stripes_n_check.get() == 1:
+                        self.stripes_n_entry.delete(0, "end")
+                        self.stripes_n_entry.configure(state="disabled")
+                    else:
+                        self.stripes_n_entry.configure(state="normal")
+                        self.stripes_n_entry.insert(0, "5")
+
+                self.random_stripes_n_check = ctk.CTkCheckBox(
+                    self.dynamic_params_frame,
+                    text="",
+                    command=toggle_stripes_entry
+                )
+                self.random_stripes_n_check.grid(row=0, column=1, pady=5, sticky="w")
+
+                ctk.CTkLabel(
+                    self.dynamic_params_frame, 
+                    text="Number of stripes:"
+                ).grid(row=1, column=0, padx=(0, 10), pady=5, sticky="w")
+                
+                self.stripes_n_entry = ctk.CTkEntry(self.dynamic_params_frame)
+                self.stripes_n_entry.insert(0, "5")
+                self.stripes_n_entry.grid(row=1, column=1, pady=5, sticky="ew")
         
         pass
         
@@ -154,6 +184,16 @@ class SidebarFrame(ctk.CTkFrame):
                     val_width = self.stripes_width_entry.get()
                     if val_width:
                         params["stripes_height"] = int(val_width)
+
+                case SplittingMethod.RANDOM_VERTICAL:
+                    val_n = self.stripes_n_entry.get()
+                    if val_n:
+                        params["stripes_vertical_n"] = int(val_n)
+
+                case SplittingMethod.RANDOM_HORIZONTAL:
+                    val_n = self.stripes_n_entry.get()
+                    if val_n:
+                        params["stripes_horizontal_n"] = int(val_n)
 
         except ValueError:
             print("Value error")
