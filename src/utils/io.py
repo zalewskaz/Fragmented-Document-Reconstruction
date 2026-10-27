@@ -54,7 +54,7 @@ def read_image(path_obj: Path) -> np.ndarray:
         
     return array_img
 
-def save_image_as_png(output_dir: Path, original_file_path: Path, image: np.ndarray) -> bool:
+def save_image_as_png(output_dir: Path, original_file_path: Path, image: np.ndarray) -> Path:
     """
     Save an OpenCV image as a PNG with a timestamped filename.
 
