@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import List
+from datetime import datetime
 import cv2
 import numpy as np
 
@@ -46,8 +47,6 @@ def get_valid_paths(path_str: str) -> List[Path]:
     return valid_paths
 
 def read_image(path_obj: Path) -> np.ndarray:
-    # array_img = cv2.imread(str(path_obj))
-    # loads images from paths with characters out of ASCII range
     array_img = cv2.imdecode(np.fromfile(str(path_obj), dtype=np.uint8), cv2.IMREAD_COLOR)
             
     if array_img is None:
@@ -55,29 +54,28 @@ def read_image(path_obj: Path) -> np.ndarray:
         
     return array_img
 
-# session class object should contain: a list of all valid paths, and *only* the ndarray for current image
-# to avoid processing 500 files at once and thus destroying memory usage
-# potentially also bool is_batch, automatically based on number of valid paths
-# but maybe unnecessary since we will just repeat the exact same process for all path files, regarless of whether we have 1 or many
+def save_image_as_png(output_dir: Path, original_file_path: Path, image: np.ndarray) -> bool:
+    """
+    Save an OpenCV image as a PNG with a timestamped filename.
 
-def save_image_as_png(output_dir: str, original_filename: str, image: np.ndarray) -> bool:
-    # moze tu jeszcze zmienie zeby bralo path a nie str
+    The output filename follows the format ``<original_filename>_<YYYYMMDD_HHMMSS>.png``.
+
+    Raises a custom exception if openCV fails to save the file.
     """
-    Saves an OpenCV ndarray image to the specified directory strictly as a PNG.
-    Creates the directory if it does not already exist.
-    """
-    dir_path = Path(output_dir)
-    dir_path.mkdir(parents=True, exist_ok=True)
-    
-    # change extension to png
-    safe_filename = f"{Path(original_filename).stem}.png"
-    
-    full_path = dir_path / safe_filename
-    
-    # cv2.imwrite automatically writes to png bc its written in filename
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # generate a filename in the format of: originalFileNameYYYYMMDD_HHMMSS
+    original_file_name = original_file_path.stem
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"{original_file_name}_{timestamp}.png"
+
+    full_path = output_dir / filename
+
     success = cv2.imwrite(str(full_path), image)
-    
+
     if not success:
-        raise ImageSaveFailedError(f"Error: OpenCV failed to write the image to {full_path}")
-        
-    return success
+        raise ImageSaveFailedError(
+            f"OpenCV failed to write the image to {full_path}"
+        )
+
+    return full_path

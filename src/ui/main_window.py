@@ -122,17 +122,14 @@ class MainWindow(ctk.CTk):
                         messagebox.showinfo("Folder Loaded", f"Loaded folder successfully. Found {len(valid_paths)} valid images.")
 
             elif choice == "Choose Save Location":
-                save_path = filedialog.asksaveasfilename(
+                save_path = filedialog.askdirectory(
                     initialdir=data_dir,
-                    defaultextension=".png",
-                    filetypes=[
-                        ("PNG Image", "*.png"),
-                        ("JPEG Image", "*.jpg"),
-                        ("TIFF Image", "*.tif *.tiff"),
-                    ],
+                    title="Choose Save Directory",
+                    mustexist=True,
                 )
+
                 if save_path:
-                    self.save_location_path = save_path
+                    self.save_location_path = Path(save_path)
 
         except Exception as e:
             messagebox.showerror("Error", str(e))
