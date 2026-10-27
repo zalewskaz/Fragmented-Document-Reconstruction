@@ -1,0 +1,10 @@
+[project]
+name = "fragmented-document-reconstruction"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "customtkinter>=5.2.0",
+    "numpy>=1.24.0",
+    "opencv-python>=4.7.0",
+    "pillow>=9.0.0",
+]

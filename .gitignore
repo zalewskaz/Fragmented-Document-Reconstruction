@@ -1,13 +1,17 @@
-# Środowisko wirtualne
+# virtual environment
+.venv/
 venv/
 env/
 ENV/
 
-# Pliki tymczasowe Pythona
+# temporary python files
 __pycache__/
 *.py[cod]
 *$py.class
 
-# Pliki systemowe
+# system files
 .DS_Store
 Thumbs.db
+
+# vs code setup
+.vscode/*
