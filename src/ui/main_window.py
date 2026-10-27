@@ -3,8 +3,12 @@ import tkinter as tk
 from tkinter import filedialog, messagebox
 import customtkinter as ctk
 from PIL import Image
-import cv2  
+import cv2
+import numpy as np  
+import processing.mask_generator as mask_generator
+from models import SplittingMethod, ProjectSession
 from src.utils.io import get_valid_paths, read_image, InvalidImageInputError
+from ui.module_1_sidebar import SidebarFrame
 
 ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("dark-blue")
@@ -37,7 +41,9 @@ class MainWindow(ctk.CTk):
 
         self.setup_top_toolbar()
         self.setup_content_area()
-        self.setup_sidebar()
+
+        self.sidebar = SidebarFrame(master=self, cmd_preview_split=self.preview_split_action)
+        self.sidebar.grid(row=1, column=1, sticky="nsew")
 
     def setup_top_toolbar(self):
         self.toolbar_frame = ctk.CTkFrame(self, height=65, corner_radius=0, fg_color=("#2b2b2b", "#1f1f1f"))
@@ -63,18 +69,6 @@ class MainWindow(ctk.CTk):
         )
         self.module_switch.pack(side="left", padx=10, pady=15)
         self.module_switch.set("Module 1: Cutter")
-
-    def setup_sidebar(self):
-        self.sidebar_frame = ctk.CTkFrame(self, width=220, corner_radius=0)
-        self.sidebar_frame.grid(row=1, column=1, sticky="nsew")
-        self.sidebar_frame.grid_rowconfigure(1, weight=1)
-
-        self.logo_label = ctk.CTkLabel(
-            self.sidebar_frame,
-            text="Fragmented Docs",
-            font=ctk.CTkFont(size=18, weight="bold"),
-        )
-        self.logo_label.grid(row=0, column=0, padx=20, pady=(20, 15))
 
     def setup_content_area(self):
         self.content_frame = ctk.CTkFrame(self, fg_color="transparent")
@@ -113,6 +107,7 @@ class MainWindow(ctk.CTk):
                     if valid_paths:
                         self.loaded_image_path = valid_paths[0]
                         opencv_image = read_image(self.loaded_image_path)
+                        ProjectSession.original_image = opencv_image
                         self.render_image_on_ui(opencv_image)
 
             elif choice == "Select Directory":
@@ -122,6 +117,7 @@ class MainWindow(ctk.CTk):
                     if valid_paths:
                         self.loaded_image_path = valid_paths[0]
                         opencv_image = read_image(self.loaded_image_path)
+                        ProjectSession.original_image = opencv_image
                         self.render_image_on_ui(opencv_image)
                         messagebox.showinfo("Folder Loaded", f"Loaded folder successfully. Found {len(valid_paths)} valid images.")
 
@@ -155,3 +151,14 @@ class MainWindow(ctk.CTk):
         self.current_image_display = ctk.CTkImage(light_image=pil_image, dark_image=pil_image, size=pil_image.size)
 
         self.display_label.configure(text="", image=self.current_image_display)
+
+    def preview_split_action(self):
+        image = ProjectSession.original_image.copy()
+        height, width = image.shape[:2]
+        dynamic_params = self.sidebar.get_split_parameters()
+
+        ProjectSession.mask = mask_generator.generate_mask(ProjectSession.splitting_method, height, width, **dynamic_params)
+
+        image[ProjectSession.mask == 1] = [0, 0, 255]
+
+        self.render_image_on_ui(image)
