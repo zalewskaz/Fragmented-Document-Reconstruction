@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 from models.parameters_enums import SplittingMethod
+import scipy.special
 
 min_fragment = 10
 min_area = 100
@@ -305,8 +306,6 @@ def voronoi_mask(mask, height, width, points_n):
         cv2.polylines(mask, [pts], isClosed=True, color=1, thickness=1)
         
     return mask
-
-import scipy.special
 
 def get_bezier_curve(points, num_points=100):
     n = len(points) - 1

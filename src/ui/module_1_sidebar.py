@@ -385,7 +385,7 @@ class SidebarFrame(ctk.CTkFrame):
 
                 ctk.CTkLabel(
                     self.dynamic_params_frame, 
-                    text="Number of points on the polyline:"
+                    text="Number of vertices:"
                 ).grid(row=1, column=0, padx=(0, 10), pady=5, sticky="w")
                 
                 self.points_k_entry = ctk.CTkEntry(self.dynamic_params_frame)
