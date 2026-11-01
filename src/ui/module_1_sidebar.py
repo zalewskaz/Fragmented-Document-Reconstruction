@@ -91,7 +91,7 @@ class SidebarFrame(ctk.CTkFrame):
             widget.destroy()
 
         match splitting_mode:
-            # TODO zamienić pola do wpisywania na idk listę?
+            # TODO ograniczyć jakoś wpisywanie zbyt dużych/małych wartości
 
             case SplittingMethod.EVEN_VERTICAL | SplittingMethod.EVEN_HORIZONTAL:
                 ctk.CTkLabel(
@@ -354,6 +354,72 @@ class SidebarFrame(ctk.CTkFrame):
                 self.strips_horizontal_n_entry = ctk.CTkEntry(self.dynamic_params_frame)
                 self.strips_horizontal_n_entry.insert(0, "5")
                 self.strips_horizontal_n_entry.grid(row=5, column=1, pady=5, sticky="ew")
+
+            case SplittingMethod.STRAIGHT_POLYGONS:
+                ctk.CTkLabel(
+                    self.dynamic_params_frame,
+                    text="Recursive cutting"
+                ).grid(row=0, column=0, padx=(0, 10), pady=5, sticky="w")
+
+                self.recursive_cutting_check = ctk.CTkCheckBox(self.dynamic_params_frame, text="")
+                self.recursive_cutting_check.grid(row=0, column=1, pady=5, sticky="w")
+
+                ctk.CTkLabel(
+                    self.dynamic_params_frame, 
+                    text="Number of cuts:"
+                ).grid(row=1, column=0, padx=(0, 10), pady=5, sticky="w")
+                
+                self.lines_n_entry = ctk.CTkEntry(self.dynamic_params_frame)
+                self.lines_n_entry.insert(0, "10")
+                self.lines_n_entry.grid(row=1, column=1, pady=5, sticky="ew")
+
+            case SplittingMethod.POLYLINE_POLYGONS:
+                ctk.CTkLabel(
+                    self.dynamic_params_frame,
+                    text="Number of polylines:"
+                ).grid(row=0, column=0, padx=(0, 10), pady=5, sticky="w")
+
+                self.lines_n_entry = ctk.CTkEntry(self.dynamic_params_frame)
+                self.lines_n_entry.insert(0, "5")
+                self.lines_n_entry.grid(row=0, column=1, pady=5, sticky="ew")
+
+                ctk.CTkLabel(
+                    self.dynamic_params_frame, 
+                    text="Number of points on the polyline:"
+                ).grid(row=1, column=0, padx=(0, 10), pady=5, sticky="w")
+                
+                self.points_k_entry = ctk.CTkEntry(self.dynamic_params_frame)
+                self.points_k_entry.insert(0, "2")
+                self.points_k_entry.grid(row=1, column=1, pady=5, sticky="ew")
+
+            case SplittingMethod.VORONOI_POLYGONS:
+                ctk.CTkLabel(
+                    self.dynamic_params_frame,
+                    text="Number of points:"
+                ).grid(row=0, column=0, padx=(0, 10), pady=5, sticky="w")
+
+                self.points_n_entry = ctk.CTkEntry(self.dynamic_params_frame)
+                self.points_n_entry.insert(0, "5")
+                self.points_n_entry.grid(row=0, column=1, pady=5, sticky="ew")
+
+            case SplittingMethod.BEZIER_CURVES:
+                ctk.CTkLabel(
+                    self.dynamic_params_frame,
+                    text="Number of curves:"
+                ).grid(row=0, column=0, padx=(0, 10), pady=5, sticky="w")
+
+                self.lines_n_entry = ctk.CTkEntry(self.dynamic_params_frame)
+                self.lines_n_entry.insert(0, "5")
+                self.lines_n_entry.grid(row=0, column=1, pady=5, sticky="ew")
+
+                ctk.CTkLabel(
+                    self.dynamic_params_frame, 
+                    text="Number of control points on the curve:"
+                ).grid(row=1, column=0, padx=(0, 10), pady=5, sticky="w")
+                
+                self.points_k_entry = ctk.CTkEntry(self.dynamic_params_frame)
+                self.points_k_entry.insert(0, "2")
+                self.points_k_entry.grid(row=1, column=1, pady=5, sticky="ew")
         
         pass
         
@@ -438,7 +504,28 @@ class SidebarFrame(ctk.CTkFrame):
 
                     equal_segments = self.equal_segments_strip_check.get()
                     params["equal_segments"] = bool(equal_segments)
-                    
+
+                case SplittingMethod.STRAIGHT_POLYGONS:
+                    lines_n = self.lines_n_entry.get()
+                    if lines_n:
+                        params["lines_n"] = int(lines_n)
+
+                    hierarchical = self.recursive_cutting_check.get()
+                    params["hierarchical"] = bool(hierarchical)
+
+                case SplittingMethod.POLYLINE_POLYGONS | SplittingMethod.BEZIER_CURVES:
+                    lines_n = self.lines_n_entry.get()
+                    if lines_n:
+                        params["lines_n"] = int(lines_n)   
+
+                    points_k = self.points_k_entry.get()
+                    if points_k:
+                        params["points_k"] = int(points_k)  
+
+                case SplittingMethod.VORONOI_POLYGONS:
+                    points_n = self.points_n_entry.get()
+                    if points_n:
+                        params["points_n"] = int(points_n)
 
 
         except ValueError:
