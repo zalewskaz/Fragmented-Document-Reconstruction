@@ -91,66 +91,335 @@ class SidebarFrame(ctk.CTkFrame):
             widget.destroy()
 
         match splitting_mode:
-            # TODO zamienić pola do wpisywania na idk listę?
+            # TODO ograniczyć jakoś wpisywanie zbyt dużych/małych wartości
 
             case SplittingMethod.EVEN_VERTICAL | SplittingMethod.EVEN_HORIZONTAL:
                 ctk.CTkLabel(
                     self.dynamic_params_frame, 
-                    text="Number of stripes:"
+                    text="Number of strips:"
                 ).grid(row=0, column=0, padx=(0, 10), pady=5, sticky="w")
                 
-                self.stripes_n_entry = ctk.CTkEntry(self.dynamic_params_frame)
-                self.stripes_n_entry.insert(0, "5")
-                self.stripes_n_entry.grid(row=0, column=1, pady=5, sticky="ew")
+                self.strips_n_entry = ctk.CTkEntry(self.dynamic_params_frame)
+                self.strips_n_entry.insert(0, "5")
+                self.strips_n_entry.grid(row=0, column=1, pady=5, sticky="ew")
 
                 ctk.CTkLabel(
                     self.dynamic_params_frame, 
-                    text="Stripes' width:"
+                    text="strips' width:"
                 ).grid(row=1, column=0, padx=(0, 10), pady=5, sticky="w")
 
-                self.stripes_width_entry = ctk.CTkEntry(self.dynamic_params_frame)
-                self.stripes_width_entry.grid(row=1, column=1, pady=5, sticky="ew")
+                self.strips_width_entry = ctk.CTkEntry(self.dynamic_params_frame)
+                self.strips_width_entry.grid(row=1, column=1, pady=5, sticky="ew")
 
                 def on_n_typing(event):
-                    if self.stripes_n_entry.get():
-                        self.stripes_width_entry.delete(0, "end")
+                    if self.strips_n_entry.get():
+                        self.strips_width_entry.delete(0, "end")
 
                 def on_width_typing(event):
-                    if self.stripes_width_entry.get():
-                        self.stripes_n_entry.delete(0, "end")
+                    if self.strips_width_entry.get():
+                        self.strips_n_entry.delete(0, "end")
 
-                self.stripes_n_entry.bind("<KeyRelease>", on_n_typing)
-                self.stripes_width_entry.bind("<KeyRelease>", on_width_typing)
+                self.strips_n_entry.bind("<KeyRelease>", on_n_typing)
+                self.strips_width_entry.bind("<KeyRelease>", on_width_typing)
 
             case SplittingMethod.RANDOM_VERTICAL | SplittingMethod.RANDOM_HORIZONTAL:
                 ctk.CTkLabel(
                     self.dynamic_params_frame,
-                    text="Random number of stripes"
+                    text="Random number of strips"
                 ).grid(row=0, column=0, padx=(0, 10), pady=5, sticky="w")
 
-                def toggle_stripes_entry():
-                    if self.random_stripes_n_check.get() == 1:
-                        self.stripes_n_entry.delete(0, "end")
-                        self.stripes_n_entry.configure(state="disabled")
+                def toggle_strips_entry():
+                    if self.random_strips_n_check.get() == 1:
+                        self.strips_n_entry.delete(0, "end")
+                        self.strips_n_entry.configure(state="disabled")
                     else:
-                        self.stripes_n_entry.configure(state="normal")
-                        self.stripes_n_entry.insert(0, "5")
+                        self.strips_n_entry.configure(state="normal")
+                        self.strips_n_entry.insert(0, "5")
 
-                self.random_stripes_n_check = ctk.CTkCheckBox(
+                self.random_strips_n_check = ctk.CTkCheckBox(
                     self.dynamic_params_frame,
                     text="",
-                    command=toggle_stripes_entry
+                    command=toggle_strips_entry
                 )
-                self.random_stripes_n_check.grid(row=0, column=1, pady=5, sticky="w")
+                self.random_strips_n_check.grid(row=0, column=1, pady=5, sticky="w")
 
                 ctk.CTkLabel(
                     self.dynamic_params_frame, 
-                    text="Number of stripes:"
+                    text="Number of strips:"
                 ).grid(row=1, column=0, padx=(0, 10), pady=5, sticky="w")
                 
-                self.stripes_n_entry = ctk.CTkEntry(self.dynamic_params_frame)
-                self.stripes_n_entry.insert(0, "5")
-                self.stripes_n_entry.grid(row=1, column=1, pady=5, sticky="ew")
+                self.strips_n_entry = ctk.CTkEntry(self.dynamic_params_frame)
+                self.strips_n_entry.insert(0, "5")
+                self.strips_n_entry.grid(row=1, column=1, pady=5, sticky="ew")
+
+            case SplittingMethod.EVEN_RECTANGLES:
+                ctk.CTkLabel(
+                    self.dynamic_params_frame, 
+                    text="Number of vertical strips:"
+                ).grid(row=0, column=0, padx=(0, 10), pady=5, sticky="w")
+                
+                self.strips_vertical_n_entry = ctk.CTkEntry(self.dynamic_params_frame)
+                self.strips_vertical_n_entry.insert(0, "5")
+                self.strips_vertical_n_entry.grid(row=0, column=1, pady=5, sticky="ew")
+
+                ctk.CTkLabel(
+                    self.dynamic_params_frame, 
+                    text="Rectangles' width:"
+                ).grid(row=1, column=0, padx=(0, 10), pady=5, sticky="w")
+
+                self.strips_width_entry = ctk.CTkEntry(self.dynamic_params_frame)
+                self.strips_width_entry.grid(row=1, column=1, pady=5, sticky="ew")
+
+                ctk.CTkLabel(
+                    self.dynamic_params_frame, 
+                    text="Number of horizontal strips:"
+                ).grid(row=2, column=0, padx=(0, 10), pady=5, sticky="w")
+                
+                self.strips_horizontal_n_entry = ctk.CTkEntry(self.dynamic_params_frame)
+                self.strips_horizontal_n_entry.insert(0, "5")
+                self.strips_horizontal_n_entry.grid(row=2, column=1, pady=5, sticky="ew")
+
+                ctk.CTkLabel(
+                    self.dynamic_params_frame, 
+                    text="Rectangles' height:"
+                ).grid(row=3, column=0, padx=(0, 10), pady=5, sticky="w")
+
+                self.strips_height_entry = ctk.CTkEntry(self.dynamic_params_frame)
+                self.strips_height_entry.grid(row=3, column=1, pady=5, sticky="ew")
+
+                def on_horizontal_n_typing(event):
+                    if self.strips_horizontal_n_entry.get():
+                        self.strips_height_entry.delete(0, "end")
+
+                def on_height_typing(event):
+                    if self.strips_height_entry.get():
+                        self.strips_horizontal_n_entry.delete(0, "end")
+
+                def on_vertical_n_typing(event):
+                    if self.strips_vertical_n_entry.get():
+                        self.strips_width_entry.delete(0, "end")
+
+                def on_width_typing(event):
+                    if self.strips_width_entry.get():
+                        self.strips_vertical_n_entry.delete(0, "end")
+
+                self.strips_horizontal_n_entry.bind("<KeyRelease>", on_horizontal_n_typing)
+                self.strips_width_entry.bind("<KeyRelease>", on_width_typing)
+                self.strips_vertical_n_entry.bind("<KeyRelease>", on_vertical_n_typing)
+                self.strips_height_entry.bind("<KeyRelease>", on_height_typing)
+
+            case SplittingMethod.RANDOM_RECTANGLES:
+                ctk.CTkLabel(
+                    self.dynamic_params_frame,
+                    text="Random number of vertical strips"
+                ).grid(row=0, column=0, padx=(0, 10), pady=5, sticky="w")
+
+                ctk.CTkLabel(
+                    self.dynamic_params_frame,
+                    text="Random number of horizontal strips"
+                ).grid(row=1, column=0, padx=(0, 10), pady=5, sticky="w")
+
+                def toggle_vertical_strips_entry():
+                    if self.random_vertical_strips_n_check.get() == 1:
+                        self.strips_vertical_n_entry.delete(0, "end")
+                        self.strips_vertical_n_entry.configure(state="disabled")
+                    else:
+                        self.strips_vertical_n_entry.configure(state="normal")
+                        self.strips_vertical_n_entry.insert(0, "5")
+
+                def toggle_horizontal_strips_entry():
+                    if self.random_horizontal_strips_n_check.get() == 1:
+                        self.strips_horizontal_n_entry.delete(0, "end")
+                        self.strips_horizontal_n_entry.configure(state="disabled")
+                    else:
+                        self.strips_horizontal_n_entry.configure(state="normal")
+                        self.strips_horizontal_n_entry.insert(0, "5")
+
+                self.random_vertical_strips_n_check = ctk.CTkCheckBox(
+                    self.dynamic_params_frame,
+                    text="",
+                    command=toggle_vertical_strips_entry
+                )
+                self.random_vertical_strips_n_check.grid(row=0, column=1, pady=5, sticky="w")
+
+                self.random_horizontal_strips_n_check = ctk.CTkCheckBox(
+                    self.dynamic_params_frame,
+                    text="",
+                    command=toggle_horizontal_strips_entry
+                )
+                self.random_horizontal_strips_n_check.grid(row=1, column=1, pady=5, sticky="w")
+
+                ctk.CTkLabel(
+                    self.dynamic_params_frame, 
+                    text="Number of vertical strips:"
+                ).grid(row=2, column=0, padx=(0, 10), pady=5, sticky="w")
+                
+                self.strips_vertical_n_entry = ctk.CTkEntry(self.dynamic_params_frame)
+                self.strips_vertical_n_entry.insert(0, "5")
+                self.strips_vertical_n_entry.grid(row=2, column=1, pady=5, sticky="ew")
+
+                ctk.CTkLabel(
+                    self.dynamic_params_frame, 
+                    text="Number of horizontal strips:"
+                ).grid(row=3, column=0, padx=(0, 10), pady=5, sticky="w")
+                
+                self.strips_horizontal_n_entry = ctk.CTkEntry(self.dynamic_params_frame)
+                self.strips_horizontal_n_entry.insert(0, "5")
+                self.strips_horizontal_n_entry.grid(row=3, column=1, pady=5, sticky="ew")
+
+            case SplittingMethod.SEGMENTED_STRIPS:
+                ctk.CTkLabel(
+                    self.dynamic_params_frame,
+                    text="Equal segments per strip"
+                ).grid(row=0, column=0, padx=(0, 10), pady=5, sticky="w")
+
+                def toggle_equal_segments_entry():
+                    if self.equal_segments_strip_check.get() == 0:
+                        self.random_horizontal_strips_n_check.select()
+                        self.strips_horizontal_n_entry.delete(0, "end")
+                        self.strips_horizontal_n_entry.configure(state="disabled")
+
+                self.equal_segments_strip_check = ctk.CTkCheckBox(
+                    self.dynamic_params_frame,
+                    text="",
+                    command=toggle_equal_segments_entry
+                )
+                self.equal_segments_strip_check.grid(row=0, column=1, pady=5, sticky="w")
+                self.equal_segments_strip_check.select()
+
+                ctk.CTkLabel(
+                    self.dynamic_params_frame,
+                    text="Even strips' width"
+                ).grid(row=1, column=0, padx=(0, 10), pady=5, sticky="w")
+
+                self.even_strips_width = ctk.CTkCheckBox(self.dynamic_params_frame, text="")
+                self.even_strips_width.grid(row=1, column=1, pady=5, sticky="w")
+                self.even_strips_width.select()
+
+                ctk.CTkLabel(
+                    self.dynamic_params_frame,
+                    text="Random number of vertical strips"
+                ).grid(row=2, column=0, padx=(0, 10), pady=5, sticky="w")
+
+                ctk.CTkLabel(
+                    self.dynamic_params_frame,
+                    text="Random number of horizontal strips"
+                ).grid(row=3, column=0, padx=(0, 10), pady=5, sticky="w")
+
+                def toggle_vertical_strips_entry():
+                    if self.random_vertical_strips_n_check.get() == 1:
+                        self.strips_vertical_n_entry.delete(0, "end")
+                        self.strips_vertical_n_entry.configure(state="disabled")
+                    else:
+                        self.strips_vertical_n_entry.configure(state="normal")
+                        self.strips_vertical_n_entry.insert(0, "5")
+
+                def toggle_horizontal_strips_entry():
+                    if self.random_horizontal_strips_n_check.get() == 1:
+                        self.strips_horizontal_n_entry.delete(0, "end")
+                        self.strips_horizontal_n_entry.configure(state="disabled")
+                    else:
+                        self.strips_horizontal_n_entry.configure(state="normal")
+                        self.strips_horizontal_n_entry.insert(0, "5")
+                        self.equal_segments_strip_check.deselect()
+
+                self.random_vertical_strips_n_check = ctk.CTkCheckBox(
+                    self.dynamic_params_frame,
+                    text="",
+                    command=toggle_vertical_strips_entry
+                )
+                self.random_vertical_strips_n_check.grid(row=2, column=1, pady=5, sticky="w")
+
+                self.random_horizontal_strips_n_check = ctk.CTkCheckBox(
+                    self.dynamic_params_frame,
+                    text="",
+                    command=toggle_horizontal_strips_entry
+                )
+                self.random_horizontal_strips_n_check.grid(row=3, column=1, pady=5, sticky="w")
+
+                ctk.CTkLabel(
+                    self.dynamic_params_frame, 
+                    text="Number of vertical strips:"
+                ).grid(row=4, column=0, padx=(0, 10), pady=5, sticky="w")
+                
+                self.strips_vertical_n_entry = ctk.CTkEntry(self.dynamic_params_frame)
+                self.strips_vertical_n_entry.insert(0, "5")
+                self.strips_vertical_n_entry.grid(row=4, column=1, pady=5, sticky="ew")
+
+                ctk.CTkLabel(
+                    self.dynamic_params_frame, 
+                    text="Number of horizontal strips:"
+                ).grid(row=5, column=0, padx=(0, 10), pady=5, sticky="w")
+                
+                self.strips_horizontal_n_entry = ctk.CTkEntry(self.dynamic_params_frame)
+                self.strips_horizontal_n_entry.insert(0, "5")
+                self.strips_horizontal_n_entry.grid(row=5, column=1, pady=5, sticky="ew")
+
+            case SplittingMethod.STRAIGHT_POLYGONS:
+                ctk.CTkLabel(
+                    self.dynamic_params_frame,
+                    text="Recursive cutting"
+                ).grid(row=0, column=0, padx=(0, 10), pady=5, sticky="w")
+
+                self.recursive_cutting_check = ctk.CTkCheckBox(self.dynamic_params_frame, text="")
+                self.recursive_cutting_check.grid(row=0, column=1, pady=5, sticky="w")
+
+                ctk.CTkLabel(
+                    self.dynamic_params_frame, 
+                    text="Number of cuts:"
+                ).grid(row=1, column=0, padx=(0, 10), pady=5, sticky="w")
+                
+                self.lines_n_entry = ctk.CTkEntry(self.dynamic_params_frame)
+                self.lines_n_entry.insert(0, "10")
+                self.lines_n_entry.grid(row=1, column=1, pady=5, sticky="ew")
+
+            case SplittingMethod.POLYLINE_POLYGONS:
+                ctk.CTkLabel(
+                    self.dynamic_params_frame,
+                    text="Number of polylines:"
+                ).grid(row=0, column=0, padx=(0, 10), pady=5, sticky="w")
+
+                self.lines_n_entry = ctk.CTkEntry(self.dynamic_params_frame)
+                self.lines_n_entry.insert(0, "5")
+                self.lines_n_entry.grid(row=0, column=1, pady=5, sticky="ew")
+
+                ctk.CTkLabel(
+                    self.dynamic_params_frame, 
+                    text="Number of vertices:"
+                ).grid(row=1, column=0, padx=(0, 10), pady=5, sticky="w")
+                
+                self.points_k_entry = ctk.CTkEntry(self.dynamic_params_frame)
+                self.points_k_entry.insert(0, "2")
+                self.points_k_entry.grid(row=1, column=1, pady=5, sticky="ew")
+
+            case SplittingMethod.VORONOI_POLYGONS:
+                ctk.CTkLabel(
+                    self.dynamic_params_frame,
+                    text="Number of points:"
+                ).grid(row=0, column=0, padx=(0, 10), pady=5, sticky="w")
+
+                self.points_n_entry = ctk.CTkEntry(self.dynamic_params_frame)
+                self.points_n_entry.insert(0, "5")
+                self.points_n_entry.grid(row=0, column=1, pady=5, sticky="ew")
+
+            case SplittingMethod.BEZIER_CURVES:
+                ctk.CTkLabel(
+                    self.dynamic_params_frame,
+                    text="Number of curves:"
+                ).grid(row=0, column=0, padx=(0, 10), pady=5, sticky="w")
+
+                self.lines_n_entry = ctk.CTkEntry(self.dynamic_params_frame)
+                self.lines_n_entry.insert(0, "5")
+                self.lines_n_entry.grid(row=0, column=1, pady=5, sticky="ew")
+
+                ctk.CTkLabel(
+                    self.dynamic_params_frame, 
+                    text="Number of control points on the curve:"
+                ).grid(row=1, column=0, padx=(0, 10), pady=5, sticky="w")
+                
+                self.points_k_entry = ctk.CTkEntry(self.dynamic_params_frame)
+                self.points_k_entry.insert(0, "2")
+                self.points_k_entry.grid(row=1, column=1, pady=5, sticky="ew")
         
         pass
         
@@ -168,32 +437,96 @@ class SidebarFrame(ctk.CTkFrame):
         try:
             match current_method:
                 case SplittingMethod.EVEN_VERTICAL:
-                    val_n = self.stripes_n_entry.get()
+                    val_n = self.strips_n_entry.get()
                     if val_n:
-                        params["stripes_vertical_n"] = int(val_n)
+                        params["strips_vertical_n"] = int(val_n)
                         
-                    val_width = self.stripes_width_entry.get()
+                    val_width = self.strips_width_entry.get()
                     if val_width:
-                        params["stripes_width"] = int(val_width)
+                        params["strips_width"] = int(val_width)
 
                 case SplittingMethod.EVEN_HORIZONTAL:
-                    val_n = self.stripes_n_entry.get()
+                    val_n = self.strips_n_entry.get()
                     if val_n:
-                        params["stripes_horizontal_n"] = int(val_n)
+                        params["strips_horizontal_n"] = int(val_n)
                         
-                    val_width = self.stripes_width_entry.get()
+                    val_width = self.strips_width_entry.get()
                     if val_width:
-                        params["stripes_height"] = int(val_width)
+                        params["strips_height"] = int(val_width)
 
                 case SplittingMethod.RANDOM_VERTICAL:
-                    val_n = self.stripes_n_entry.get()
+                    val_n = self.strips_n_entry.get()
                     if val_n:
-                        params["stripes_vertical_n"] = int(val_n)
+                        params["strips_vertical_n"] = int(val_n)
 
                 case SplittingMethod.RANDOM_HORIZONTAL:
-                    val_n = self.stripes_n_entry.get()
+                    val_n = self.strips_n_entry.get()
                     if val_n:
-                        params["stripes_horizontal_n"] = int(val_n)
+                        params["strips_horizontal_n"] = int(val_n)
+
+                case SplittingMethod.EVEN_RECTANGLES:
+                    horizontal_n = self.strips_horizontal_n_entry.get()
+                    if horizontal_n:
+                        params["strips_horizontal_n"] = int(horizontal_n)
+
+                    vertical_n = self.strips_vertical_n_entry.get()
+                    if vertical_n:
+                        params["strips_vertical_n"] = int(vertical_n)       
+
+                    width = self.strips_width_entry.get()
+                    if width:
+                        params["strips_width"] = int(width)
+
+                    height = self.strips_height_entry.get()
+                    if height:
+                        params["strips_height"] = int(height)  
+
+                case SplittingMethod.RANDOM_RECTANGLES:
+                    horizontal_n = self.strips_horizontal_n_entry.get()
+                    if horizontal_n:
+                        params["strips_horizontal_n"] = int(horizontal_n)
+
+                    vertical_n = self.strips_vertical_n_entry.get()
+                    if vertical_n:
+                        params["strips_vertical_n"] = int(vertical_n)     
+
+                case SplittingMethod.SEGMENTED_STRIPS:
+                    horizontal_n = self.strips_horizontal_n_entry.get()
+                    if horizontal_n:
+                        params["strips_horizontal_n"] = int(horizontal_n)
+
+                    vertical_n = self.strips_vertical_n_entry.get()
+                    if vertical_n:
+                        params["strips_vertical_n"] = int(vertical_n) 
+
+                    even_width = self.even_strips_width.get()
+                    params["even_width"] = bool(even_width)
+
+                    equal_segments = self.equal_segments_strip_check.get()
+                    params["equal_segments"] = bool(equal_segments)
+
+                case SplittingMethod.STRAIGHT_POLYGONS:
+                    lines_n = self.lines_n_entry.get()
+                    if lines_n:
+                        params["lines_n"] = int(lines_n)
+
+                    hierarchical = self.recursive_cutting_check.get()
+                    params["hierarchical"] = bool(hierarchical)
+
+                case SplittingMethod.POLYLINE_POLYGONS | SplittingMethod.BEZIER_CURVES:
+                    lines_n = self.lines_n_entry.get()
+                    if lines_n:
+                        params["lines_n"] = int(lines_n)   
+
+                    points_k = self.points_k_entry.get()
+                    if points_k:
+                        params["points_k"] = int(points_k)  
+
+                case SplittingMethod.VORONOI_POLYGONS:
+                    points_n = self.points_n_entry.get()
+                    if points_n:
+                        params["points_n"] = int(points_n)
+
 
         except ValueError:
             print("Value error")
