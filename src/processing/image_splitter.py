@@ -4,7 +4,6 @@ import cv2
 
 def split_image(original_image: np.ndarray, mask: np.ndarray) -> list[ImageFragment]:
     # TODO: add other splitting methods (jagged edges rather than missing pixels)
-    # TODO: add fragment rotation
 
     # invert the mask: fragments become 1 (foreground), borders become 0 (background) in order to be supported by cv2.connectedComponentsWithStats
     pieces_mask = (mask == 0).astype(np.uint8)

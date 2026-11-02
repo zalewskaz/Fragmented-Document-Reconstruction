@@ -81,16 +81,27 @@ class SidebarFrame(ctk.CTkFrame):
         )
         self.prev_split_button.grid(row=2, column=0, padx=20, pady=10)
 
+        # Checkbox for rotating the pieces randomly before they're placed on the background
+        self.rotate_pieces_check = ctk.CTkCheckBox(
+            self,
+            text="Rotate pieces randomly",
+        )
+        self.rotate_pieces_check.select()
+        self.rotate_pieces_check.grid(row=3, column=0, padx=20, pady=10, sticky="w")
+
         # Run button
         self.run_button = ctk.CTkButton(
                     self, 
                     text="Run", 
                     command=cmd_run
                 )
-        self.run_button.grid(row=3, column=0, padx=20, pady=10)
+        self.run_button.grid(row=4, column=0, padx=20, pady=10)
 
     def get_splitting_method(self):
         return self.split_opt_dropdown.get()
+
+    def get_rotate_pieces(self) -> bool:
+        return bool(self.rotate_pieces_check.get())
 
     def split_parameters_show(self, splitting_mode_str):
         splitting_mode = SplittingMethod(splitting_mode_str)

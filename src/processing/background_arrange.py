@@ -1,10 +1,31 @@
 import numpy as np
 import random
+import cv2
 from models import ImageFragment
 
-def arrange_on_background(height: int, width: int, fragments_list: list[ImageFragment]) -> np.ndarray:
-    # TODO: switch background colour depending on whether the image is light or dark
-    
+DARK_BACKGROUND = (64, 64, 64, 255)
+LIGHT_BACKGROUND = (192, 192, 192, 255)
+
+
+def pick_background_colour(image: np.ndarray) -> tuple[int, int, int, int]:
+    """
+    Picks a background colour that the pieces will stand out against.
+
+    If the document is mostly light (like white paper), we use a dark background, and the other way round.
+    Works for grayscale, BGR and BGRA images.
+    """
+    if image.ndim == 2:
+        gray = image
+    elif image.shape[2] == 4:
+        gray = cv2.cvtColor(image, cv2.COLOR_BGRA2GRAY)
+    else:
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    return DARK_BACKGROUND if gray.mean() > 127 else LIGHT_BACKGROUND
+
+
+def arrange_on_background(height: int, width: int, fragments_list: list[ImageFragment],
+                          bg_colour: tuple[int, int, int, int] = DARK_BACKGROUND) -> np.ndarray:
     bg_h = int(1.5 * height)
     bg_w = width
     max_attempts = 100
@@ -44,8 +65,8 @@ def arrange_on_background(height: int, width: int, fragments_list: list[ImageFra
                 bg_w += int(width * 0.25)
     
     # rendering phase
-    # initialize a dark-gray background (BGRA format: 64, 64, 64, 255)
-    background = np.full((bg_h, bg_w, 4), [64, 64, 64, 255], dtype=np.uint8)
+    # fill the whole background with the chosen colour
+    background = np.full((bg_h, bg_w, 4), bg_colour, dtype=np.uint8)
     
     for x, y, w, h, frag in placed_pieces:
         roi = background[y:y+h, x:x+w]
