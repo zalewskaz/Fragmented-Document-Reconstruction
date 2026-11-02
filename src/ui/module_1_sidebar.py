@@ -4,7 +4,7 @@ import numpy as np
 from models import SplittingMethod, ProjectSession
 
 class SidebarFrame(ctk.CTkFrame):
-    def __init__(self, master, cmd_preview_split, **kwargs):
+    def __init__(self, master, cmd_preview_split, cmd_run, **kwargs):
         super().__init__(master, width=220, corner_radius=0, **kwargs)
         
         self.grid_rowconfigure(10, weight=1)
@@ -80,6 +80,14 @@ class SidebarFrame(ctk.CTkFrame):
             command=cmd_preview_split
         )
         self.prev_split_button.grid(row=2, column=0, padx=20, pady=10)
+
+        # Run button
+        self.run_button = ctk.CTkButton(
+                    self, 
+                    text="Run", 
+                    command=cmd_run
+                )
+        self.run_button.grid(row=3, column=0, padx=20, pady=10)
 
     def get_splitting_method(self):
         return self.split_opt_dropdown.get()

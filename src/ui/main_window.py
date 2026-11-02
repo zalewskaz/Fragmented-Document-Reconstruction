@@ -6,7 +6,9 @@ from PIL import Image
 import cv2
 import numpy as np  
 import processing.mask_generator as mask_generator
-from models import SplittingMethod, ProjectSession
+import processing.image_splitter as image_splitter
+import processing.background_arrange as background_arrange
+from models import SplittingMethod, ProjectSession, ImageFragment
 from src.utils.io import get_valid_paths, read_image, InvalidImageInputError
 from ui.module_1_sidebar import SidebarFrame
 
@@ -42,7 +44,7 @@ class MainWindow(ctk.CTk):
         self.setup_top_toolbar()
         self.setup_content_area()
 
-        self.sidebar = SidebarFrame(master=self, cmd_preview_split=self.preview_split_action)
+        self.sidebar = SidebarFrame(master=self, cmd_preview_split=self.preview_split_action, cmd_run=self.run_action)
         self.sidebar.grid(row=1, column=1, sticky="nsew")
 
     def setup_top_toolbar(self):
@@ -137,7 +139,7 @@ class MainWindow(ctk.CTk):
         self.action_menu.set("File Actions...")
 
     def render_image_on_ui(self, cv_img):
-        """Konwertuje macierz OpenCV (BGR) na format obsługiwany przez CustomTkinter (RGB -> Pillow -> CTkImage) i wyświetla."""
+        """Converts an OpenCV matrix (BGR) into a format supported by CustomTkinter (RGB -> Pillow -> CTkImage) and displays it."""
         rgb_image = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
         pil_image = Image.fromarray(rgb_image)
 
@@ -159,3 +161,28 @@ class MainWindow(ctk.CTk):
         image[ProjectSession.mask == 1] = [0, 0, 255]
 
         self.render_image_on_ui(image)
+
+    def run_action(self):
+        image = ProjectSession.original_image.copy()
+        height, width = image.shape[:2]
+        # TODO: check whether save location is selected, display pop-up prompting the user to select it if not
+
+        # generate a mask if it hasn't been generated already
+        if ProjectSession.mask is None: 
+            dynamic_params = self.sidebar.get_split_parameters()
+            ProjectSession.mask = mask_generator.generate_mask(ProjectSession.splitting_method, height, width, **dynamic_params)
+
+        # split original image into pieces according to the mask, save a list of those pieces into session
+        fragments_list = image_splitter.split_image(image, ProjectSession.mask)
+        ProjectSession.fragments = fragments_list
+
+        # arrange the pieces on a background
+        pieces_on_background = background_arrange.arrange_on_background(height, width, fragments_list)
+        ProjectSession.pieces_on_background = pieces_on_background
+
+        # display an image with arranged pieces
+        self.render_image_on_ui(pieces_on_background)
+
+        # TODO: save the final image to a disk location
+        
+        pass
