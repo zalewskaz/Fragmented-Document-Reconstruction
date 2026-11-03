@@ -261,15 +261,19 @@ class MainWindow(ctk.CTk):
         self.render_image_on_ui(image)
 
     def fragment_image(self, image: np.ndarray, mask: np.ndarray) -> np.ndarray:
-        """Cuts the image into pieces, rotates them (if the checkbox is on) and scatters them on a background."""
+        """Cuts the image into pieces, rotates them (if such option is selected) and scatters them on a background."""
         height, width = image.shape[:2]
 
         # cut the image into pieces along the mask lines
         fragments_list = image_splitter.split_image(image, mask)
 
-        # give every piece its own random rotation, if the user ticked the checkbox
-        if self.sidebar.get_rotate_pieces():
+        # rotate pieces according to the selected dropdown option
+        if self.sidebar.get_rotation_option() == "Rotate randomly":
             fragments_list = fragment_rotation.rotate_fragments_randomly(fragments_list)
+        elif self.sidebar.get_rotation_option() == "Rotate by k*90 degrees":
+            fragments_list = fragment_rotation.rotate_fragments_90deg(fragments_list)
+        elif self.sidebar.get_rotation_option() == "Rotate by k*180 degrees":
+                    fragments_list = fragment_rotation.rotate_fragments_180deg(fragments_list)
 
         ProjectSession.fragments = fragments_list
 

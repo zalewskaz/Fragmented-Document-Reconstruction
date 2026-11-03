@@ -82,12 +82,38 @@ class SidebarFrame(ctk.CTkFrame):
         self.prev_split_button.grid(row=2, column=0, padx=20, pady=10)
 
         # Checkbox for rotating the pieces randomly before they're placed on the background
-        self.rotate_pieces_check = ctk.CTkCheckBox(
-            self,
-            text="Rotate pieces randomly",
+        # self.rotate_pieces_check = ctk.CTkCheckBox(
+        #     self,
+        #     text="Rotate pieces randomly",
+        # )
+        # self.rotate_pieces_check.select()
+        # self.rotate_pieces_check.grid(row=3, column=0, padx=20, pady=10, sticky="w")
+
+        # Piece rotation dropdown
+        self.rotation_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.rotation_frame.grid(row=3, column=0, padx=20, pady=10, sticky="ew")
+        self.rotation_frame.grid_columnconfigure(1, weight=1)
+
+        self.rotation_label = ctk.CTkLabel(
+            self.rotation_frame,
+            text="Piece rotation:"
         )
-        self.rotate_pieces_check.select()
-        self.rotate_pieces_check.grid(row=3, column=0, padx=20, pady=10, sticky="w")
+        self.rotation_label.grid(row=0, column=0, padx=(0, 10))
+
+        rotation_options = [
+            "No rotation",
+            "Rotate randomly",
+            "Rotate by k*90 degrees",
+            "Rotate by k*180 degrees"
+        ]
+
+        self.rotation_dropdown = ctk.CTkOptionMenu(
+            self.rotation_frame,
+            values=rotation_options
+        )
+        self.rotation_dropdown.grid(row=0, column=1, sticky="ew")
+
+        self.rotation_dropdown.set("No rotation")
 
         # Run button
         self.run_button = ctk.CTkButton(
@@ -100,8 +126,8 @@ class SidebarFrame(ctk.CTkFrame):
     def get_splitting_method(self):
         return self.split_opt_dropdown.get()
 
-    def get_rotate_pieces(self) -> bool:
-        return bool(self.rotate_pieces_check.get())
+    def get_rotation_option(self) -> str:
+        return self.rotation_dropdown.get()
 
     def split_parameters_show(self, splitting_mode_str):
         splitting_mode = SplittingMethod(splitting_mode_str)
