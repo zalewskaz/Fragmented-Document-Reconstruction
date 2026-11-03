@@ -1,7 +1,7 @@
 import customtkinter as ctk
 import cv2
 import numpy as np
-from models import SplittingMethod, ProjectSession
+from models import SplittingMethod, ProjectSession, RotationOption, BorderPixelSplittingOption
 
 class SidebarFrame(ctk.CTkFrame):
     def __init__(self, master, cmd_preview_split, cmd_run, **kwargs):
@@ -81,14 +81,6 @@ class SidebarFrame(ctk.CTkFrame):
         )
         self.prev_split_button.grid(row=2, column=0, padx=20, pady=10)
 
-        # Checkbox for rotating the pieces randomly before they're placed on the background
-        # self.rotate_pieces_check = ctk.CTkCheckBox(
-        #     self,
-        #     text="Rotate pieces randomly",
-        # )
-        # self.rotate_pieces_check.select()
-        # self.rotate_pieces_check.grid(row=3, column=0, padx=20, pady=10, sticky="w")
-
         # Piece rotation dropdown
         self.rotation_frame = ctk.CTkFrame(self, fg_color="transparent")
         self.rotation_frame.grid(row=3, column=0, padx=20, pady=10, sticky="ew")
@@ -100,12 +92,7 @@ class SidebarFrame(ctk.CTkFrame):
         )
         self.rotation_label.grid(row=0, column=0, padx=(0, 10))
 
-        rotation_options = [
-            "No rotation",
-            "Rotate randomly",
-            "Rotate by k*90 degrees",
-            "Rotate by k*180 degrees"
-        ]
+        rotation_options = [rotation_option.value for rotation_option in RotationOption]
 
         self.rotation_dropdown = ctk.CTkOptionMenu(
             self.rotation_frame,

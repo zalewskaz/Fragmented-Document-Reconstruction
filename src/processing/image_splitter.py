@@ -14,8 +14,7 @@ def split_image(original_image: np.ndarray, mask: np.ndarray) -> list[ImageFragm
     
     fragments = []
     padding = 5
-    is_color = len(original_image.shape) == 3 # if image is in color then save into height*width*4 bgra array, else height*width*2 grayscale-alpha array
-    channels = original_image.shape[2] if is_color else 1
+    channels = original_image.shape[2] # save into height*width*4 bgra array
 
     # label 0 is the background (the borders), so we iterate from 1 to num_labels
     for i in range(1, num_labels):
@@ -39,14 +38,10 @@ def split_image(original_image: np.ndarray, mask: np.ndarray) -> list[ImageFragm
         target_region = fragment_data[padding:padding+h, padding:padding+w]
         
         # map original pixels to the target region using the boolean mask
-        if is_color:
-            for ch in range(channels):
-                target_region[piece_label_mask, ch] = piece_crop[:, :, ch][piece_label_mask]
-            # set alpha channel to fully opaque for the piece pixels
-            target_region[piece_label_mask, channels] = 255
-        else:
-            target_region[piece_label_mask, 0] = piece_crop[piece_label_mask]
-            target_region[piece_label_mask, 1] = 255
+        for ch in range(channels):
+            target_region[piece_label_mask, ch] = piece_crop[:, :, ch][piece_label_mask]
+        # set alpha channel to fully opaque for the piece pixels
+        target_region[piece_label_mask, channels] = 255
             
         fragments.append(ImageFragment(
             data=fragment_data, 
