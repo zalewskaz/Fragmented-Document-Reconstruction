@@ -11,15 +11,17 @@ def pick_background_colour(image: np.ndarray) -> tuple[int, int, int, int]:
     """
     Picks a background colour that the pieces will stand out against.
 
-    If the document is mostly light (like white paper), we use a dark background, and the other way round.
+    If the document is mostly light, we use a dark-gray background.
+    If the document is mostly dark, we use a light-gray background.
+
     Works for grayscale, BGR and BGRA images.
     """
-    if image.ndim == 2:
-        gray = image
+    if image.shape[2] == 3:
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     elif image.shape[2] == 4:
         gray = cv2.cvtColor(image, cv2.COLOR_BGRA2GRAY)
     else:
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        raise Exception("unsupported image format (neither BGR nor BGRA)")
 
     return DARK_BACKGROUND if gray.mean() > 127 else LIGHT_BACKGROUND
 
@@ -60,9 +62,10 @@ def arrange_on_background(height: int, width: int, fragments_list: list[ImageFra
                     placed_successfully = True
                     break
             
-            # if we failed `max_attempts` times, expand the background width and try this piece again
+            # if we failed `max_attempts` times, expand the background height and width and try this piece again
             if not placed_successfully:
                 bg_w += int(width * 0.25)
+                bg_h += int(height * 0.25)
     
     # rendering phase
     # fill the whole background with the chosen colour
