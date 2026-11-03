@@ -1,7 +1,7 @@
 import customtkinter as ctk
 
 class CTkSpinbox(ctk.CTkFrame):
-    def __init__(self, master, start_value=0, step=1, min_value=0, max_value=10, command=None, **kwargs):
+    def __init__(self, master, start_value=2, step=1, min_value=2, max_value=10, command=None, **kwargs):
         super().__init__(master, **kwargs)
         
         self.step = step
