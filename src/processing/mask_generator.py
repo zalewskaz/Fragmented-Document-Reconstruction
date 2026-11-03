@@ -3,8 +3,8 @@ import numpy as np
 from models.parameters_enums import SplittingMethod
 import scipy.special
 
-min_fragment = 10
-min_area = 100
+min_fragment = 20
+min_area = 400
 
 def generate_mask(splitting_method, height, width, strips_vertical_n=None, strips_horizontal_n=None, strips_height=None, strips_width=None, equal_segments=True, even_width=True, lines_n=5, points_k=0, hierarchical=False, points_n=5):
     mask = np.zeros((height, width), dtype=np.uint8)

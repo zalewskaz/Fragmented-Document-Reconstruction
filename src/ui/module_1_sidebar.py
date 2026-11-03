@@ -2,6 +2,7 @@ import customtkinter as ctk
 import cv2
 import numpy as np
 from models import SplittingMethod, ProjectSession, RotationOption, EdgePixelAttributionOption
+from .CTkSpinbox import CTkSpinbox
 
 class SidebarFrame(ctk.CTkFrame):
     def __init__(self, master, cmd_preview_split, cmd_run, **kwargs):
@@ -63,15 +64,7 @@ class SidebarFrame(ctk.CTkFrame):
             text="Reset", 
             command=self.reset_params_action
         )
-        self.reset_params_button.grid(row=3, column=0, padx=20, pady=10)
-
-        # Set button
-        self.set_params_button = ctk.CTkButton(
-            self.param_frame, 
-            text="Set", 
-            command=self.set_params_action
-        )
-        self.set_params_button.grid(row=3, column=1, padx=20, pady=10)
+        self.reset_params_button.grid(row=3, column=0, padx=20, pady=10, columnspan=2)
 
         # Preview split button
         self.prev_split_button = ctk.CTkButton(
@@ -147,38 +140,44 @@ class SidebarFrame(ctk.CTkFrame):
             widget.destroy()
 
         match splitting_mode:
-            # TODO ograniczyć jakoś wpisywanie zbyt dużych/małych wartości
-
             case SplittingMethod.EVEN_VERTICAL | SplittingMethod.EVEN_HORIZONTAL:
+                def on_n_typing(value):
+                    if value.strip() != "":
+                        self.strips_width_entry.clear()
+
+                def on_width_typing(value):
+                    if value.strip() != "":
+                        self.strips_n_entry.clear()
+                
                 ctk.CTkLabel(
                     self.dynamic_params_frame, 
                     text="Number of strips:"
                 ).grid(row=0, column=0, padx=(0, 10), pady=5, sticky="w")
                 
-                self.strips_n_entry = ctk.CTkEntry(self.dynamic_params_frame)
-                self.strips_n_entry.insert(0, "5")
+                self.strips_n_entry = CTkSpinbox(
+                    self.dynamic_params_frame, 
+                    start_value=5, 
+                    step=1, 
+                    max_value=40,
+                    command=on_n_typing)
                 self.strips_n_entry.grid(row=0, column=1, pady=5, sticky="ew")
 
                 ctk.CTkLabel(
                     self.dynamic_params_frame, 
-                    text="strips' width:"
+                    text="Strips' width:"
                 ).grid(row=1, column=0, padx=(0, 10), pady=5, sticky="w")
 
-                self.strips_width_entry = ctk.CTkEntry(self.dynamic_params_frame)
+                self.strips_width_entry = CTkSpinbox(
+                    self.dynamic_params_frame, 
+                    start_value=40, 
+                    step=1, 
+                    min_value=20, 
+                    max_value=200,
+                    command=on_width_typing)
+                self.strips_width_entry.clear()
                 self.strips_width_entry.grid(row=1, column=1, pady=5, sticky="ew")
 
-                def on_n_typing(event):
-                    if self.strips_n_entry.get():
-                        self.strips_width_entry.delete(0, "end")
-
-                def on_width_typing(event):
-                    if self.strips_width_entry.get():
-                        self.strips_n_entry.delete(0, "end")
-
-                self.strips_n_entry.bind("<KeyRelease>", on_n_typing)
-                self.strips_width_entry.bind("<KeyRelease>", on_width_typing)
-
-            case SplittingMethod.RANDOM_VERTICAL | SplittingMethod.RANDOM_HORIZONTAL:
+            case SplittingMethod.RANDOM_VERTICAL | SplittingMethod.RANDOM_HORIZONTAL:             
                 ctk.CTkLabel(
                     self.dynamic_params_frame,
                     text="Random number of strips"
@@ -186,11 +185,9 @@ class SidebarFrame(ctk.CTkFrame):
 
                 def toggle_strips_entry():
                     if self.random_strips_n_check.get() == 1:
-                        self.strips_n_entry.delete(0, "end")
-                        self.strips_n_entry.configure(state="disabled")
+                        self.strips_n_entry.block()
                     else:
-                        self.strips_n_entry.configure(state="normal")
-                        self.strips_n_entry.insert(0, "5")
+                        self.strips_n_entry.unblock()
 
                 self.random_strips_n_check = ctk.CTkCheckBox(
                     self.dynamic_params_frame,
@@ -204,18 +201,41 @@ class SidebarFrame(ctk.CTkFrame):
                     text="Number of strips:"
                 ).grid(row=1, column=0, padx=(0, 10), pady=5, sticky="w")
                 
-                self.strips_n_entry = ctk.CTkEntry(self.dynamic_params_frame)
-                self.strips_n_entry.insert(0, "5")
+                self.strips_n_entry = CTkSpinbox(
+                    self.dynamic_params_frame, 
+                    start_value=5, 
+                    step=1, 
+                    max_value=40)
                 self.strips_n_entry.grid(row=1, column=1, pady=5, sticky="ew")
 
             case SplittingMethod.EVEN_RECTANGLES:
+                def on_vertical_n_typing(value):
+                    if value.strip() != "":
+                        self.strips_width_entry.clear()
+
+                def on_width_typing(value):
+                    if value.strip() != "":
+                        self.strips_vertical_n_entry.clear()
+
+                def on_horizontal_n_typing(value):
+                    if value.strip() != "":
+                        self.strips_height_entry.clear()
+
+                def on_height_typing(value):
+                    if value.strip() != "":
+                        self.strips_horizontal_n_entry.clear()
+
                 ctk.CTkLabel(
                     self.dynamic_params_frame, 
                     text="Number of vertical strips:"
                 ).grid(row=0, column=0, padx=(0, 10), pady=5, sticky="w")
                 
-                self.strips_vertical_n_entry = ctk.CTkEntry(self.dynamic_params_frame)
-                self.strips_vertical_n_entry.insert(0, "5")
+                self.strips_vertical_n_entry = CTkSpinbox(
+                    self.dynamic_params_frame, 
+                    start_value=5, 
+                    step=1, 
+                    max_value=40,
+                    command=on_vertical_n_typing)
                 self.strips_vertical_n_entry.grid(row=0, column=1, pady=5, sticky="ew")
 
                 ctk.CTkLabel(
@@ -223,7 +243,14 @@ class SidebarFrame(ctk.CTkFrame):
                     text="Rectangles' width:"
                 ).grid(row=1, column=0, padx=(0, 10), pady=5, sticky="w")
 
-                self.strips_width_entry = ctk.CTkEntry(self.dynamic_params_frame)
+                self.strips_width_entry = CTkSpinbox(
+                    self.dynamic_params_frame, 
+                    start_value=40, 
+                    step=1, 
+                    min_value=20, 
+                    max_value=200,
+                    command=on_width_typing)
+                self.strips_width_entry.clear()
                 self.strips_width_entry.grid(row=1, column=1, pady=5, sticky="ew")
 
                 ctk.CTkLabel(
@@ -231,8 +258,12 @@ class SidebarFrame(ctk.CTkFrame):
                     text="Number of horizontal strips:"
                 ).grid(row=2, column=0, padx=(0, 10), pady=5, sticky="w")
                 
-                self.strips_horizontal_n_entry = ctk.CTkEntry(self.dynamic_params_frame)
-                self.strips_horizontal_n_entry.insert(0, "5")
+                self.strips_horizontal_n_entry = CTkSpinbox(
+                    self.dynamic_params_frame, 
+                    start_value=5, 
+                    step=1, 
+                    max_value=40,
+                    command=on_horizontal_n_typing)
                 self.strips_horizontal_n_entry.grid(row=2, column=1, pady=5, sticky="ew")
 
                 ctk.CTkLabel(
@@ -240,29 +271,15 @@ class SidebarFrame(ctk.CTkFrame):
                     text="Rectangles' height:"
                 ).grid(row=3, column=0, padx=(0, 10), pady=5, sticky="w")
 
-                self.strips_height_entry = ctk.CTkEntry(self.dynamic_params_frame)
+                self.strips_height_entry = CTkSpinbox(
+                    self.dynamic_params_frame, 
+                    start_value=40, 
+                    step=1, 
+                    min_value=20, 
+                    max_value=200,
+                    command=on_height_typing)
+                self.strips_height_entry.clear()
                 self.strips_height_entry.grid(row=3, column=1, pady=5, sticky="ew")
-
-                def on_horizontal_n_typing(event):
-                    if self.strips_horizontal_n_entry.get():
-                        self.strips_height_entry.delete(0, "end")
-
-                def on_height_typing(event):
-                    if self.strips_height_entry.get():
-                        self.strips_horizontal_n_entry.delete(0, "end")
-
-                def on_vertical_n_typing(event):
-                    if self.strips_vertical_n_entry.get():
-                        self.strips_width_entry.delete(0, "end")
-
-                def on_width_typing(event):
-                    if self.strips_width_entry.get():
-                        self.strips_vertical_n_entry.delete(0, "end")
-
-                self.strips_horizontal_n_entry.bind("<KeyRelease>", on_horizontal_n_typing)
-                self.strips_width_entry.bind("<KeyRelease>", on_width_typing)
-                self.strips_vertical_n_entry.bind("<KeyRelease>", on_vertical_n_typing)
-                self.strips_height_entry.bind("<KeyRelease>", on_height_typing)
 
             case SplittingMethod.RANDOM_RECTANGLES:
                 ctk.CTkLabel(
@@ -277,19 +294,15 @@ class SidebarFrame(ctk.CTkFrame):
 
                 def toggle_vertical_strips_entry():
                     if self.random_vertical_strips_n_check.get() == 1:
-                        self.strips_vertical_n_entry.delete(0, "end")
-                        self.strips_vertical_n_entry.configure(state="disabled")
+                        self.strips_vertical_n_entry.block()
                     else:
-                        self.strips_vertical_n_entry.configure(state="normal")
-                        self.strips_vertical_n_entry.insert(0, "5")
+                        self.strips_vertical_n_entry.unblock()
 
                 def toggle_horizontal_strips_entry():
                     if self.random_horizontal_strips_n_check.get() == 1:
-                        self.strips_horizontal_n_entry.delete(0, "end")
-                        self.strips_horizontal_n_entry.configure(state="disabled")
+                        self.strips_horizontal_n_entry.block()
                     else:
-                        self.strips_horizontal_n_entry.configure(state="normal")
-                        self.strips_horizontal_n_entry.insert(0, "5")
+                        self.strips_horizontal_n_entry.unblock()
 
                 self.random_vertical_strips_n_check = ctk.CTkCheckBox(
                     self.dynamic_params_frame,
@@ -310,8 +323,12 @@ class SidebarFrame(ctk.CTkFrame):
                     text="Number of vertical strips:"
                 ).grid(row=2, column=0, padx=(0, 10), pady=5, sticky="w")
                 
-                self.strips_vertical_n_entry = ctk.CTkEntry(self.dynamic_params_frame)
-                self.strips_vertical_n_entry.insert(0, "5")
+                self.strips_vertical_n_entry = CTkSpinbox(
+                    self.dynamic_params_frame, 
+                    start_value=5, 
+                    step=1, 
+                    max_value=40,
+                    command=on_vertical_n_typing)
                 self.strips_vertical_n_entry.grid(row=2, column=1, pady=5, sticky="ew")
 
                 ctk.CTkLabel(
@@ -319,8 +336,12 @@ class SidebarFrame(ctk.CTkFrame):
                     text="Number of horizontal strips:"
                 ).grid(row=3, column=0, padx=(0, 10), pady=5, sticky="w")
                 
-                self.strips_horizontal_n_entry = ctk.CTkEntry(self.dynamic_params_frame)
-                self.strips_horizontal_n_entry.insert(0, "5")
+                self.strips_vertical_n_entry = CTkSpinbox(
+                    self.dynamic_params_frame, 
+                    start_value=5, 
+                    step=1, 
+                    max_value=40,
+                    command=on_horizontal_n_typing)
                 self.strips_horizontal_n_entry.grid(row=3, column=1, pady=5, sticky="ew")
 
             case SplittingMethod.SEGMENTED_STRIPS:
@@ -332,8 +353,7 @@ class SidebarFrame(ctk.CTkFrame):
                 def toggle_equal_segments_entry():
                     if self.equal_segments_strip_check.get() == 0:
                         self.random_horizontal_strips_n_check.select()
-                        self.strips_horizontal_n_entry.delete(0, "end")
-                        self.strips_horizontal_n_entry.configure(state="disabled")
+                        self.strips_horizontal_n_entry.block()
 
                 self.equal_segments_strip_check = ctk.CTkCheckBox(
                     self.dynamic_params_frame,
@@ -364,20 +384,16 @@ class SidebarFrame(ctk.CTkFrame):
 
                 def toggle_vertical_strips_entry():
                     if self.random_vertical_strips_n_check.get() == 1:
-                        self.strips_vertical_n_entry.delete(0, "end")
-                        self.strips_vertical_n_entry.configure(state="disabled")
+                        self.strips_vertical_n_entry.block()
                     else:
-                        self.strips_vertical_n_entry.configure(state="normal")
-                        self.strips_vertical_n_entry.insert(0, "5")
+                        self.strips_vertical_n_entry.unblock()
 
                 def toggle_horizontal_strips_entry():
                     if self.random_horizontal_strips_n_check.get() == 1:
-                        self.strips_horizontal_n_entry.delete(0, "end")
-                        self.strips_horizontal_n_entry.configure(state="disabled")
+                        self.strips_horizontal_n_entry.block()
                     else:
                         self.strips_horizontal_n_entry.configure(state="normal")
-                        self.strips_horizontal_n_entry.insert(0, "5")
-                        self.equal_segments_strip_check.deselect()
+                        self.strips_horizontal_n_entry.unblock()
 
                 self.random_vertical_strips_n_check = ctk.CTkCheckBox(
                     self.dynamic_params_frame,
@@ -398,8 +414,12 @@ class SidebarFrame(ctk.CTkFrame):
                     text="Number of vertical strips:"
                 ).grid(row=4, column=0, padx=(0, 10), pady=5, sticky="w")
                 
-                self.strips_vertical_n_entry = ctk.CTkEntry(self.dynamic_params_frame)
-                self.strips_vertical_n_entry.insert(0, "5")
+                self.strips_vertical_n_entry = CTkSpinbox(
+                    self.dynamic_params_frame, 
+                    start_value=5, 
+                    step=1, 
+                    max_value=40,
+                    command=on_vertical_n_typing)
                 self.strips_vertical_n_entry.grid(row=4, column=1, pady=5, sticky="ew")
 
                 ctk.CTkLabel(
@@ -407,8 +427,12 @@ class SidebarFrame(ctk.CTkFrame):
                     text="Number of horizontal strips:"
                 ).grid(row=5, column=0, padx=(0, 10), pady=5, sticky="w")
                 
-                self.strips_horizontal_n_entry = ctk.CTkEntry(self.dynamic_params_frame)
-                self.strips_horizontal_n_entry.insert(0, "5")
+                self.strips_horizontal_n_entry = CTkSpinbox(
+                    self.dynamic_params_frame, 
+                    start_value=5, 
+                    step=1,
+                    max_value=40,
+                    command=on_horizontal_n_typing)
                 self.strips_horizontal_n_entry.grid(row=5, column=1, pady=5, sticky="ew")
 
             case SplittingMethod.STRAIGHT_POLYGONS:
@@ -425,8 +449,13 @@ class SidebarFrame(ctk.CTkFrame):
                     text="Number of cuts:"
                 ).grid(row=1, column=0, padx=(0, 10), pady=5, sticky="w")
                 
-                self.lines_n_entry = ctk.CTkEntry(self.dynamic_params_frame)
-                self.lines_n_entry.insert(0, "10")
+                self.lines_n_entry = CTkSpinbox(
+                    self.dynamic_params_frame,
+                    start_value=10,
+                    step=1,
+                    min_value=2,
+                    max_value=100
+                    )
                 self.lines_n_entry.grid(row=1, column=1, pady=5, sticky="ew")
 
             case SplittingMethod.POLYLINE_POLYGONS:
@@ -435,8 +464,13 @@ class SidebarFrame(ctk.CTkFrame):
                     text="Number of polylines:"
                 ).grid(row=0, column=0, padx=(0, 10), pady=5, sticky="w")
 
-                self.lines_n_entry = ctk.CTkEntry(self.dynamic_params_frame)
-                self.lines_n_entry.insert(0, "5")
+                self.lines_n_entry = CTkSpinbox(
+                    self.dynamic_params_frame,
+                    start_value=5,
+                    step=1,
+                    min_value=2,
+                    max_value=10
+                    )
                 self.lines_n_entry.grid(row=0, column=1, pady=5, sticky="ew")
 
                 ctk.CTkLabel(
@@ -444,8 +478,13 @@ class SidebarFrame(ctk.CTkFrame):
                     text="Number of vertices:"
                 ).grid(row=1, column=0, padx=(0, 10), pady=5, sticky="w")
                 
-                self.points_k_entry = ctk.CTkEntry(self.dynamic_params_frame)
-                self.points_k_entry.insert(0, "2")
+                self.points_k_entry = CTkSpinbox(
+                    self.dynamic_params_frame,
+                    start_value=2,
+                    step=1,
+                    min_value=0,
+                    max_value=5
+                    )
                 self.points_k_entry.grid(row=1, column=1, pady=5, sticky="ew")
 
             case SplittingMethod.VORONOI_POLYGONS:
@@ -454,8 +493,13 @@ class SidebarFrame(ctk.CTkFrame):
                     text="Number of points:"
                 ).grid(row=0, column=0, padx=(0, 10), pady=5, sticky="w")
 
-                self.points_n_entry = ctk.CTkEntry(self.dynamic_params_frame)
-                self.points_n_entry.insert(0, "5")
+                self.points_n_entry = CTkSpinbox(
+                    self.dynamic_params_frame,
+                    start_value=5,
+                    step=1,
+                    min_value=2,
+                    max_value=150
+                    )
                 self.points_n_entry.grid(row=0, column=1, pady=5, sticky="ew")
 
             case SplittingMethod.BEZIER_CURVES:
@@ -464,8 +508,13 @@ class SidebarFrame(ctk.CTkFrame):
                     text="Number of curves:"
                 ).grid(row=0, column=0, padx=(0, 10), pady=5, sticky="w")
 
-                self.lines_n_entry = ctk.CTkEntry(self.dynamic_params_frame)
-                self.lines_n_entry.insert(0, "5")
+                self.lines_n_entry = CTkSpinbox(
+                    self.dynamic_params_frame,
+                    start_value=5,
+                    step=1,
+                    min_value=1,
+                    max_value=15
+                    )
                 self.lines_n_entry.grid(row=0, column=1, pady=5, sticky="ew")
 
                 ctk.CTkLabel(
@@ -473,8 +522,13 @@ class SidebarFrame(ctk.CTkFrame):
                     text="Number of control points on the curve:"
                 ).grid(row=1, column=0, padx=(0, 10), pady=5, sticky="w")
                 
-                self.points_k_entry = ctk.CTkEntry(self.dynamic_params_frame)
-                self.points_k_entry.insert(0, "2")
+                self.points_k_entry = CTkSpinbox(
+                    self.dynamic_params_frame,
+                    start_value=2,
+                    step=1,
+                    min_value=1,
+                    max_value=5
+                    )
                 self.points_k_entry.grid(row=1, column=1, pady=5, sticky="ew")
         
         pass
@@ -482,9 +536,6 @@ class SidebarFrame(ctk.CTkFrame):
     # TODO resetowanie parametrów   
     def reset_params_action(self):
         pass
-
-    def set_params_action(self):
-        ProjectSession.splitting_method = self.split_opt_dropdown.get()
 
     def get_split_parameters(self):
         current_method = self.split_opt_dropdown.get()
