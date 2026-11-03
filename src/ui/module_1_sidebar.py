@@ -1,7 +1,7 @@
 import customtkinter as ctk
 import cv2
 import numpy as np
-from models import SplittingMethod, ProjectSession, RotationOption, BorderPixelSplittingOption
+from models import SplittingMethod, ProjectSession, RotationOption, EdgePixelAttributionOption
 
 class SidebarFrame(ctk.CTkFrame):
     def __init__(self, master, cmd_preview_split, cmd_run, **kwargs):
@@ -100,7 +100,28 @@ class SidebarFrame(ctk.CTkFrame):
         )
         self.rotation_dropdown.grid(row=0, column=1, sticky="ew")
 
-        self.rotation_dropdown.set("No rotation")
+        self.rotation_dropdown.set(RotationOption.NO_ROTATION.value)
+
+        # Edge pixel attribution dropdown
+        self.edge_pixel_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.edge_pixel_frame.grid(row=4, column=0, padx=20, pady=10, sticky="ew")
+        self.edge_pixel_frame.grid_columnconfigure(1, weight=1)
+
+        self.edge_pixel_label = ctk.CTkLabel(
+            self.edge_pixel_frame,
+            text="Edge pixel attribution:"
+        )
+        self.edge_pixel_label.grid(row=0, column=0, padx=(0, 10))
+
+        edge_pixel_options = [edge_pixel_option.value for edge_pixel_option in EdgePixelAttributionOption]
+
+        self.edge_pixel_dropdown = ctk.CTkOptionMenu(
+            self.edge_pixel_frame,
+            values=edge_pixel_options
+        )
+        self.edge_pixel_dropdown.grid(row=0, column=1, sticky="ew")
+
+        self.edge_pixel_dropdown.set(EdgePixelAttributionOption.DISAPPEAR.value)
 
         # Run button
         self.run_button = ctk.CTkButton(
@@ -108,13 +129,16 @@ class SidebarFrame(ctk.CTkFrame):
                     text="Run", 
                     command=cmd_run
                 )
-        self.run_button.grid(row=4, column=0, padx=20, pady=10)
+        self.run_button.grid(row=5, column=0, padx=20, pady=10)
 
     def get_splitting_method(self):
         return self.split_opt_dropdown.get()
 
     def get_rotation_option(self) -> str:
         return self.rotation_dropdown.get()
+
+    def get_edge_pixel_option(self) -> str:
+            return self.edge_pixel_dropdown.get()
 
     def split_parameters_show(self, splitting_mode_str):
         splitting_mode = SplittingMethod(splitting_mode_str)

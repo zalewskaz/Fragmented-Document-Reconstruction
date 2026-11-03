@@ -19,7 +19,7 @@ class RotationOption(str, Enum):
     ROTATION_90DEG = "Rotate by k*90 degrees"
     ROTATION_180DEG = "Rotate by k*180 degrees"
 
-class BorderPixelSplittingOption(str, Enum):
-    DISAPPEAR = "Edge pixels disappear from final pieces"
-    RANDOM_ATTRIBUTION = "Each edge pixel is randomly attributed to one of the pieces it borders"
-    NON_RANDOM_ATTRIBUTION = "All edge pixels are always attributed to the same one of the pieces they border"
+class EdgePixelAttributionOption(str, Enum):
+    DISAPPEAR = "None"
+    RANDOM_ATTRIBUTION = "Random"
+    NON_RANDOM_ATTRIBUTION = "Non-random"
