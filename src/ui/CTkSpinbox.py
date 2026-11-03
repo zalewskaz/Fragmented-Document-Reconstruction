@@ -109,8 +109,9 @@ class CTkSpinbox(ctk.CTkFrame):
 
     def unblock(self):
         self.btn_minus.configure(state="enabled")
-        self._get_current_for_arrows()
         self.btn_plus.configure(state="enabled")
+        val = self._get_current_for_arrows()
+        self.set(val)
 
     def clear(self):
         self.entry.delete(0, ctk.END)

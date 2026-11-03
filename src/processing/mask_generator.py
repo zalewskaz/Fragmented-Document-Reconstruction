@@ -129,7 +129,7 @@ def segmented_mask(mask, height, width, strips_vertical_n, strips_horizontal_n, 
     max_strips = width // min_fragment
     if max_strips < 1:
         return mask
-    max_strips = min(20, max_strips)
+    max_strips = min(30, max_strips)
     
     if strips_vertical_n is None:
         strips_vertical_n = int(random_normal_ints(2, max_strips, size=1)[0])
@@ -137,6 +137,9 @@ def segmented_mask(mask, height, width, strips_vertical_n, strips_horizontal_n, 
     if even_width:
         strips_width = width // strips_vertical_n
         vertical_cut_points = np.arange(strips_width, width, strips_width, dtype=int)
+        if len(vertical_cut_points) > 0:
+            if width - vertical_cut_points[-1] < min_fragment:
+                vertical_cut_points = vertical_cut_points[:-1]
     else:
         vertical_cut_points = random_cuts(width, max_strips, strips_vertical_n)
 

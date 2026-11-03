@@ -391,7 +391,6 @@ class SidebarFrame(ctk.CTkFrame):
                     if self.random_horizontal_strips_n_check.get() == 1:
                         self.strips_horizontal_n_entry.block()
                     else:
-                        self.strips_horizontal_n_entry.configure(state="normal")
                         self.strips_horizontal_n_entry.unblock()
 
                 self.random_vertical_strips_n_check = ctk.CTkCheckBox(
