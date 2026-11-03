@@ -52,7 +52,7 @@ class MainWindow(ctk.CTk):
         self.setup_content_area()
         self.setup_status_bar()
 
-        self.sidebar = SidebarFrame(master=self, cmd_preview_split=self.preview_split_action, cmd_run=self.run_action)
+        self.sidebar = SidebarFrame(master=self, cmd_preview_split=self.preview_split_action, cmd_run=self.run_action, warning_callback=self.show_warning)
         self.sidebar.grid(row=1, column=1, sticky="nsew")
 
     def setup_top_toolbar(self):
@@ -362,3 +362,8 @@ class MainWindow(ctk.CTk):
 
         if failed:
             messagebox.showwarning("Batch Finished With Errors", summary + "\n\nFailed:\n" + "\n".join(failed))
+        else:
+            messagebox.showinfo("Batch Finished", summary)
+
+    def show_warning(self, message):
+        messagebox.showwarning("Time limit reached", message)

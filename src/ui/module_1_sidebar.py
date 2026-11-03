@@ -5,8 +5,10 @@ from models import SplittingMethod, ProjectSession, RotationOption, EdgePixelAtt
 from .CTkSpinbox import CTkSpinbox
 
 class SidebarFrame(ctk.CTkFrame):
-    def __init__(self, master, cmd_preview_split, cmd_run, **kwargs):
+    def __init__(self, master, cmd_preview_split, cmd_run, warning_callback, **kwargs):
         super().__init__(master, width=220, corner_radius=0, **kwargs)
+
+        self.warning_callback = warning_callback
         
         self.grid_rowconfigure(10, weight=1)
 
@@ -538,6 +540,7 @@ class SidebarFrame(ctk.CTkFrame):
     def get_split_parameters(self):
         current_method = self.split_opt_dropdown.get()
         params = {}
+        params["warning_callback"] = self.warning_callback
 
         try:
             match current_method:
