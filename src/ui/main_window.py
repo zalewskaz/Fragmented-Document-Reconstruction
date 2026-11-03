@@ -13,6 +13,11 @@ from models import SplittingMethod, ProjectSession, ImageFragment
 from src.utils.io import get_valid_paths, read_image, save_image_as_png, InvalidImageInputError
 from ui.module_1_sidebar import SidebarFrame
 
+# params
+STATUS_HIDE_AFTER_MS = 5000  
+SELECT_SAVE_LOCATION = "Select Save Location"
+CHANGE_SAVE_LOCATION = "Change Save Location"
+
 ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("dark-blue")
 
@@ -45,6 +50,7 @@ class MainWindow(ctk.CTk):
 
         self.setup_top_toolbar()
         self.setup_content_area()
+        self.setup_status_bar()
 
         self.sidebar = SidebarFrame(master=self, cmd_preview_split=self.preview_split_action, cmd_run=self.run_action)
         self.sidebar.grid(row=1, column=1, sticky="nsew")
@@ -55,11 +61,7 @@ class MainWindow(ctk.CTk):
 
         self.action_menu = ctk.CTkOptionMenu(
             self.toolbar_frame,
-            values=[
-                "Select File",
-                "Select Directory",
-                "Choose Save Location"
-            ],
+            values=self.menu_options(),
             command=self.handle_menu_action,
             width=180
         )
@@ -88,6 +90,50 @@ class MainWindow(ctk.CTk):
             justify="center",
         )
         self.display_label.grid(row=0, column=0)
+
+    def setup_status_bar(self):
+        # bottom bar for short info messages
+        self.status_frame = ctk.CTkFrame(self, height=28, corner_radius=0, fg_color=("#2b2b2b", "#1f1f1f"))
+        self.status_frame.pack_propagate(False)
+        self.status_label = ctk.CTkLabel(self.status_frame, text="", anchor="w", font=ctk.CTkFont(size=12))
+        self.status_label.pack(side="left", fill="x", expand=True, padx=20, pady=2)
+
+    def set_status(self, text: str, auto_hide: bool = True):
+        # auto_hide=True: the message shows up and disappears after a few seconds
+        # auto_hide=False: the message stays until the next one replaces it (used for batch mode progress)
+        start_height = self.status_frame.cget("height") if self.status_frame.winfo_manager() else 0
+
+        self.status_label.configure(text=text)
+        self.status_frame.configure(height=start_height)
+        self.status_frame.place(relx=0, rely=1, anchor="sw", relwidth=1)
+        self.status_frame.lift()  # make sure it's drawn above the other widgets
+        self.show_status(text, start_height)
+
+        if auto_hide:
+            # self.after(ms, function) is a Tkinter widget method; it calls the function after ms milliseconds 
+            self.after(STATUS_HIDE_AFTER_MS, lambda: self.hide_status(text))
+
+    def show_status(self, text: str, height: int):
+        # stop if a newer message has replaced this one 
+        if self.status_label.cget("text") != text:
+            return
+
+        height = min(height + 2, 28)
+        self.status_frame.configure(height=height)
+        if height < 28:
+            self.after(15, self.show_status, text, height)
+
+    def hide_status(self, text: str, height: int = 28):
+        # hide the bar only if no newer message has replaced this one in the meantime
+        if self.status_label.cget("text") != text:
+            return
+
+        if height <= 0:
+            self.status_frame.place_forget()
+            return
+
+        self.status_frame.configure(height=height)
+        self.after(15, self.hide_status, text, height - 2)
 
     def switch_view(self, view_name: str):
         pass
@@ -127,7 +173,7 @@ class MainWindow(ctk.CTk):
                         self.render_image_on_ui(opencv_image)
                         messagebox.showinfo("Folder Loaded", f"Loaded folder successfully. Found {len(valid_paths)} valid images.")
 
-            elif choice == "Choose Save Location":
+            elif choice in (SELECT_SAVE_LOCATION, CHANGE_SAVE_LOCATION):
                 self.choose_save_location()
 
         except Exception as e:
@@ -135,17 +181,25 @@ class MainWindow(ctk.CTk):
 
         self.action_menu.set("File Actions...")
 
+    def menu_options(self) -> list[str]:
+        save_option = CHANGE_SAVE_LOCATION if self.save_location_path is not None else SELECT_SAVE_LOCATION
+        return ["Select File", "Select Directory", save_option]
+
     def choose_save_location(self) -> bool:
-        """Lets the user pick a folder to save results in. Returns False if they closed the window without choosing."""
-        data_dir = Path(__file__).resolve().parent.parent.parent / "data"
+        if self.save_location_path is not None and self.save_location_path.is_dir():
+            initial_dir = self.save_location_path
+        else:
+            initial_dir = Path(__file__).resolve().parent.parent.parent / "data"
+
         save_path = filedialog.askdirectory(
-            initialdir=data_dir,
+            initialdir=initial_dir,
             title="Choose Save Directory",
             mustexist=True,
         )
 
         if save_path:
             self.save_location_path = Path(save_path)
+            self.action_menu.configure(values=self.menu_options())
             return True
         return False
 
@@ -160,18 +214,24 @@ class MainWindow(ctk.CTk):
         return True
 
     def ensure_save_location(self) -> bool:
-        """If no save folder was chosen yet, asks the user to pick one. Returns False if they decide not to."""
+        """If no save folder was chosen yet, asks the user to pick one. Returns False if they cancel."""
         if self.save_location_path is not None:
             return True
 
-        wants_to_choose = messagebox.askyesno(
+        messagebox.showinfo(
             "No Save Location",
-            "No save location has been selected. Do you want to choose one now?",
+            "No save location has been selected. Please choose a folder to save the results in.",
         )
-        if not wants_to_choose:
-            return False
 
-        return self.choose_save_location()
+        if self.choose_save_location():
+            return True
+
+        # the user cancelled the folder picker and stop the run
+        messagebox.showwarning(
+            "Directory Not Selected",
+            "No save directory was selected, so the run was stopped and nothing was saved.",
+        )
+        return False
 
     def render_image_on_ui(self, cv_img):
         """Converts an OpenCV matrix (BGR) into a format supported by CustomTkinter (RGB -> Pillow -> CTkImage) and displays it."""
@@ -224,6 +284,10 @@ class MainWindow(ctk.CTk):
         if not self.ensure_image_loaded():
             return
 
+        is_batch = len(self.loaded_image_paths) > 1
+        if is_batch and not self.ensure_save_location():
+            return
+
         image = ProjectSession.original_image.copy()
         height, width = image.shape[:2]
 
@@ -238,7 +302,6 @@ class MainWindow(ctk.CTk):
         self.render_image_on_ui(pieces_on_background)
         self.update_idletasks()
 
-        # we only ask where to save after the user has seen what came out
         if not self.ensure_save_location():
             return
 
@@ -251,7 +314,7 @@ class MainWindow(ctk.CTk):
 
         remaining_paths = self.loaded_image_paths[1:]
         if not remaining_paths:
-            messagebox.showinfo("Image Saved", f"The fragmented image has been saved to:\n{saved_path}")
+            self.set_status(f"Image saved to: {saved_path}")
             return
 
         self.run_batch(remaining_paths)
@@ -269,7 +332,7 @@ class MainWindow(ctk.CTk):
         total = len(paths) + 1
 
         for index, path in enumerate(paths, start=2):
-            self.title(f"Fragmented Document Reconstruction — processing {index}/{total}: {path.name}")
+            self.set_status(f"Processing {index}/{total}: {path.name}", auto_hide=False)
             self.update()
 
             try:
@@ -286,10 +349,8 @@ class MainWindow(ctk.CTk):
             except Exception as e:
                 failed.append(f"{path.name}: {e}")
 
-        self.title("Fragmented Document Reconstruction")
+        summary = f"Saved {saved_count} of {total} images to: {self.save_location_path}"
+        self.set_status(summary)
 
-        summary = f"Saved {saved_count} of {total} images to:\n{self.save_location_path}"
         if failed:
             messagebox.showwarning("Batch Finished With Errors", summary + "\n\nFailed:\n" + "\n".join(failed))
-        else:
-            messagebox.showinfo("Batch Finished", summary)
