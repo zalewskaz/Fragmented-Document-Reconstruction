@@ -50,7 +50,6 @@ class SidebarFrame(ctk.CTkFrame):
         )
         self.split_opt_dropdown.grid(row=0, column=1, columnspan=2, sticky="ew")
         self.split_opt_dropdown.set(SplittingMethod.EVEN_VERTICAL.value)
-        ProjectSession.splitting_method = SplittingMethod.EVEN_VERTICAL.value
 
         self.dynamic_params_frame = ctk.CTkFrame(self.param_frame, fg_color="transparent")
         self.dynamic_params_frame.grid(row=2, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
