@@ -29,11 +29,16 @@ def pick_background_colour(image: np.ndarray) -> tuple[int, int, int, int]:
 def arrange_on_background(height: int, width: int, fragments_list: list[ImageFragment],
                           bg_colour: tuple[int, int, int, int] = DARK_BACKGROUND) -> np.ndarray:
     bg_h = int(1.5 * height)
-    bg_w = width
+    bg_w = int(1.5 * width)
     max_attempts = 100
     
     # store tuples of (x, y, w, h, fragment)
     placed_pieces = []
+
+    min_x = np.inf
+    min_y = np.inf
+    max_x = -1
+    max_y = -1
     
     for frag in fragments_list:
         frag_h, frag_w = frag.data.shape[:2]
@@ -60,6 +65,15 @@ def arrange_on_background(height: int, width: int, fragments_list: list[ImageFra
                 if not overlap:
                     placed_pieces.append((rx, ry, frag_w, frag_h, frag))
                     placed_successfully = True
+                    # update min/max x/y values
+                    if rx < min_x: 
+                        min_x = rx
+                    if ry < min_y: 
+                        min_y = ry
+                    if rx + frag_w > max_x:
+                        max_x = rx + frag_w
+                    if ry + frag_h > max_y:
+                        max_y = ry + frag_h
                     break
             
             # if we failed `max_attempts` times, expand the background height and width and try this piece again
@@ -67,12 +81,18 @@ def arrange_on_background(height: int, width: int, fragments_list: list[ImageFra
                 bg_w += int(width * 0.25)
                 bg_h += int(height * 0.25)
     
+    # cut down unused background from all sides, leaving 5px padding so that pieces dont touch the edge
+    offset_x = min_x - 5
+    offset_y = min_y - 5
+    bg_w = max_x - offset_x + 5
+    bg_h = max_y - offset_y + 5
+    
     # rendering phase
     # fill the whole background with the chosen colour
     background = np.full((bg_h, bg_w, 4), bg_colour, dtype=np.uint8)
     
     for x, y, w, h, frag in placed_pieces:
-        roi = background[y:y+h, x:x+w]
+        roi = background[y-offset_y:y-offset_y+h, x-offset_x:x-offset_x+w]
         
         piece_data = frag.data
         channels = piece_data.shape[2]
