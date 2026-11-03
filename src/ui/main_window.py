@@ -265,7 +265,8 @@ class MainWindow(ctk.CTk):
         height, width = image.shape[:2]
 
         # cut the image into pieces along the mask lines
-        fragments_list = image_splitter.split_image(image, mask)
+        edge_pixel_option = self.sidebar.get_edge_pixel_option()
+        fragments_list = image_splitter.split_image(image, mask, edge_pixel_option)
 
         # rotate pieces according to the selected dropdown option
         if self.sidebar.get_rotation_option() == RotationOption.ROTATION_RANDOM.value:
