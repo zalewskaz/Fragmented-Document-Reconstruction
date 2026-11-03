@@ -46,7 +46,7 @@ class MainWindow(ctk.CTk):
         self.grid_rowconfigure(0, weight=0)  
         self.grid_rowconfigure(1, weight=1)  
         self.grid_columnconfigure(0, weight=1)  
-        self.grid_columnconfigure(1, weight=0)  
+        self.grid_columnconfigure(1, weight=0, minsize=650)  
 
         self.setup_top_toolbar()
         self.setup_content_area()

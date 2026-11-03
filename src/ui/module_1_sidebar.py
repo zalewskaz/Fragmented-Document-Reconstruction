@@ -7,6 +7,7 @@ from .CTkSpinbox import CTkSpinbox
 class SidebarFrame(ctk.CTkFrame):
     def __init__(self, master, cmd_preview_split, cmd_run, cmd_save, warning_callback, **kwargs):
         super().__init__(master, width=220, corner_radius=0, **kwargs)
+        self.grid_columnconfigure(0, weight=1)
 
         self.warning_callback = warning_callback
         
@@ -15,6 +16,7 @@ class SidebarFrame(ctk.CTkFrame):
         # Parameters menu
         self.param_frame = ctk.CTkFrame(self) 
         self.param_frame.grid(row=1, column=0, padx=20, pady=10, sticky="ew")
+        self.param_frame.grid_columnconfigure((0, 1), weight=1)
 
         self.param_label = ctk.CTkLabel(
             self.param_frame, 
@@ -226,7 +228,8 @@ class SidebarFrame(ctk.CTkFrame):
                     self.dynamic_params_frame, 
                     start_value=5, 
                     step=1, 
-                    max_value=40)
+                    max_value=40
+                    )
                 self.strips_n_entry.grid(row=1, column=1, pady=5, sticky="ew")
 
             case SplittingMethod.EVEN_RECTANGLES:
