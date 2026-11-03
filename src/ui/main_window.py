@@ -9,7 +9,7 @@ import processing.mask_generator as mask_generator
 import processing.image_splitter as image_splitter
 import processing.background_arrange as background_arrange
 import processing.fragment_rotation as fragment_rotation
-from models import SplittingMethod, ProjectSession, ImageFragment
+from models import SplittingMethod, ProjectSession, ImageFragment, RotationOption
 from src.utils.io import get_valid_paths, read_image, save_image_as_png, InvalidImageInputError
 from ui.module_1_sidebar import SidebarFrame
 
@@ -261,15 +261,20 @@ class MainWindow(ctk.CTk):
         self.render_image_on_ui(image)
 
     def fragment_image(self, image: np.ndarray, mask: np.ndarray) -> np.ndarray:
-        """Cuts the image into pieces, rotates them (if the checkbox is on) and scatters them on a background."""
+        """Cuts the image into pieces, rotates them (if such option is selected) and scatters them on a background."""
         height, width = image.shape[:2]
 
         # cut the image into pieces along the mask lines
-        fragments_list = image_splitter.split_image(image, mask)
+        edge_pixel_option = self.sidebar.get_edge_pixel_option()
+        fragments_list = image_splitter.split_image(image, mask, edge_pixel_option)
 
-        # give every piece its own random rotation, if the user ticked the checkbox
-        if self.sidebar.get_rotate_pieces():
+        # rotate pieces according to the selected dropdown option
+        if self.sidebar.get_rotation_option() == RotationOption.ROTATION_RANDOM.value:
             fragments_list = fragment_rotation.rotate_fragments_randomly(fragments_list)
+        elif self.sidebar.get_rotation_option() == RotationOption.ROTATION_90DEG.value:
+            fragments_list = fragment_rotation.rotate_fragments_90deg(fragments_list)
+        elif self.sidebar.get_rotation_option() == RotationOption.ROTATION_180DEG.value:
+                    fragments_list = fragment_rotation.rotate_fragments_180deg(fragments_list)
 
         ProjectSession.fragments = fragments_list
 
