@@ -52,7 +52,7 @@ class MainWindow(ctk.CTk):
         self.setup_content_area()
         self.setup_status_bar()
 
-        self.sidebar = SidebarFrame(master=self, cmd_preview_split=self.preview_split_action, cmd_run=self.run_action, warning_callback=self.show_warning)
+        self.sidebar = SidebarFrame(master=self, cmd_preview_split=self.preview_split_action, cmd_run=self.run_action, cmd_save=self.save_action, warning_callback=self.show_warning)
         self.sidebar.grid(row=1, column=1, sticky="nsew")
 
     def setup_top_toolbar(self):
@@ -159,6 +159,9 @@ class MainWindow(ctk.CTk):
                         self.loaded_image_path = valid_paths[0]
                         opencv_image = read_image(self.loaded_image_path)
                         ProjectSession.original_image = opencv_image
+                        ProjectSession.mask = None
+                        ProjectSession.pieces_on_background = None
+                        self.sidebar.set_batch_mode(False)
                         self.render_image_on_ui(opencv_image)
 
             elif choice == "Select Directory":
@@ -170,6 +173,10 @@ class MainWindow(ctk.CTk):
                         self.loaded_image_path = valid_paths[0]
                         opencv_image = read_image(self.loaded_image_path)
                         ProjectSession.original_image = opencv_image
+                        ProjectSession.mask = None
+                        ProjectSession.pieces_on_background = None
+                        # a folder with just one image works like a single file
+                        self.sidebar.set_batch_mode(len(valid_paths) > 1)
                         self.render_image_on_ui(opencv_image)
                         messagebox.showinfo("Folder Loaded", f"Loaded folder successfully. Found {len(valid_paths)} valid images.")
 
@@ -214,24 +221,11 @@ class MainWindow(ctk.CTk):
         return True
 
     def ensure_save_location(self) -> bool:
-        """If no save folder was chosen yet, asks the user to pick one. Returns False if they cancel."""
+        """If no save folder was chosen yet, opens the folder picker. Returns False if the user cancels."""
         if self.save_location_path is not None:
             return True
 
-        messagebox.showinfo(
-            "No Save Location",
-            "No save location has been selected. Please choose a folder to save the results in.",
-        )
-
-        if self.choose_save_location():
-            return True
-
-        # the user cancelled the folder picker and stop the run
-        messagebox.showwarning(
-            "Directory Not Selected",
-            "No save directory was selected, so the run was stopped and nothing was saved.",
-        )
-        return False
+        return self.choose_save_location()
 
     def render_image_on_ui(self, cv_img):
         """Converts an OpenCV matrix (BGR) into a format supported by CustomTkinter (RGB -> Pillow -> CTkImage) and displays it."""
@@ -257,9 +251,17 @@ class MainWindow(ctk.CTk):
 
         ProjectSession.mask = mask_generator.generate_mask(current_method, height, width, **dynamic_params)
 
-        image[ProjectSession.mask == 1] = [0, 0, 255]
+        # for the preview we thicken lines
+        # big images are shrunk more on screen so they get a bigger kernel
+        kernel_size = (5, 5) if max(height, width) > 1500 else (3, 3)
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, kernel_size)
+        preview_lines = cv2.dilate(ProjectSession.mask.astype(np.uint8), kernel)
+
+        image[preview_lines == 1] = [0, 0, 255]
 
         self.render_image_on_ui(image)
+        # the screen now shows the preview instead of the result, so there's nothing to save until the next Run
+        self.sidebar.set_save_enabled(False)
 
     def fragment_image(self, image: np.ndarray, mask: np.ndarray) -> np.ndarray:
         """Cuts the image into pieces, rotates them (if such option is selected) and scatters them on a background."""
@@ -292,6 +294,11 @@ class MainWindow(ctk.CTk):
 
         is_batch = len(self.loaded_image_paths) > 1
         if is_batch and not self.ensure_save_location():
+            # the user cancelled the folder picker so we stop the run
+            messagebox.showwarning(
+                "Directory Not Selected",
+                "No save directory was selected, so nothing was processed or saved.",
+            )
             return
 
         image = ProjectSession.original_image.copy()
@@ -305,26 +312,46 @@ class MainWindow(ctk.CTk):
 
         pieces_on_background = self.fragment_image(image, ProjectSession.mask)
 
-        # show the result right away - update_idletasks() makes sure it's drawn before any pop-up appears
+        # show the result right away - update_idletasks() makes sure it's drawn before we continue
         self.render_image_on_ui(pieces_on_background)
         self.update_idletasks()
 
-        if not self.ensure_save_location():
+        # single mode: just show the result - saving is done separately with the Save button
+        if not is_batch:
+            self.sidebar.set_save_enabled(True)
             return
 
-        # save the result in the chosen folder
+        # batch mode: save the first image, then go through the rest
         try:
-            saved_path = save_image_as_png(self.save_location_path, self.loaded_image_path, pieces_on_background)
+            save_image_as_png(self.save_location_path, self.loaded_image_path, pieces_on_background)
         except Exception as e:
             messagebox.showerror("Save Failed", f"Could not save the image:\n{e}")
             return
 
-        remaining_paths = self.loaded_image_paths[1:]
-        if not remaining_paths:
-            self.set_status(f"Image saved to: {saved_path}")
+        # lock Run, Preview and the file menu while the batch runs and unlock them again when the batch ends
+        self.sidebar.set_batch_running(True)
+        self.action_menu.configure(state="disabled")
+        try:
+            self.run_batch(self.loaded_image_paths[1:])
+        finally:
+            self.sidebar.set_batch_running(False)
+            self.action_menu.configure(state="normal")
+
+    def save_action(self):
+        """Single mode - saves the result of the last Run."""
+        if ProjectSession.pieces_on_background is None:
             return
 
-        self.run_batch(remaining_paths)
+        if not self.ensure_save_location():
+            return
+
+        try:
+            saved_path = save_image_as_png(self.save_location_path, self.loaded_image_path, ProjectSession.pieces_on_background)
+        except Exception as e:
+            messagebox.showerror("Save Failed", f"Could not save the image:\n{e}")
+            return
+
+        self.set_status(f"Image saved to: {saved_path}")
 
     def run_batch(self, paths: list[Path]):
         """

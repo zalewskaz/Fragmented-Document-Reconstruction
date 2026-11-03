@@ -5,19 +5,12 @@ from models import SplittingMethod, ProjectSession, RotationOption, EdgePixelAtt
 from .CTkSpinbox import CTkSpinbox
 
 class SidebarFrame(ctk.CTkFrame):
-    def __init__(self, master, cmd_preview_split, cmd_run, warning_callback, **kwargs):
+    def __init__(self, master, cmd_preview_split, cmd_run, cmd_save, warning_callback, **kwargs):
         super().__init__(master, width=220, corner_radius=0, **kwargs)
 
         self.warning_callback = warning_callback
         
         self.grid_rowconfigure(10, weight=1)
-
-        self.logo_label = ctk.CTkLabel(
-            self,
-            text="Fragmented Docs",
-            font=ctk.CTkFont(size=18, weight="bold"),
-        )
-        self.logo_label.grid(row=0, column=0, padx=20, pady=(20, 15))
 
         # Parameters menu
         self.param_frame = ctk.CTkFrame(self) 
@@ -124,6 +117,33 @@ class SidebarFrame(ctk.CTkFrame):
                     command=cmd_run
                 )
         self.run_button.grid(row=5, column=0, padx=20, pady=10)
+
+        # Save button - only in single mode, greyed out until there's a result to save
+        self.save_button = ctk.CTkButton(
+            self,
+            text="Save",
+            command=cmd_save,
+            state="disabled",
+        )
+        self.save_button.grid(row=6, column=0, padx=20, pady=10)
+
+    def set_batch_mode(self, is_batch: bool):
+        """Batch mode has one "Run & Save" button, single mode has separate "Run" and "Save" buttons."""
+        if is_batch:
+            self.run_button.configure(text="Run & Save")
+            self.save_button.grid_remove()
+        else:
+            self.run_button.configure(text="Run")
+            self.save_button.grid()
+        self.set_save_enabled(False)
+
+    def set_batch_running(self, running: bool):
+        """While the batch is running Run and Preview are locked, so the run can't be started twice."""
+        self.run_button.configure(state="disabled" if running else "normal")
+        self.prev_split_button.configure(state="disabled" if running else "normal")
+
+    def set_save_enabled(self, enabled: bool):
+        self.save_button.configure(state="normal" if enabled else "disabled")
 
     def get_splitting_method(self):
         return self.split_opt_dropdown.get()
