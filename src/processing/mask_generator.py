@@ -3,10 +3,10 @@ import numpy as np
 from models.parameters_enums import SplittingMethod
 import scipy.special
 
-min_fragment = 10
-min_area = 100
+min_fragment = 20
+min_area = 400
 
-def generate_mask(splitting_method, height, width, strips_vertical_n=None, strips_horizontal_n=None, strips_height=None, strips_width=None, equal_segments=True, even_width=True, lines_n=5, points_k=0, hierarchical=False, points_n=5):
+def generate_mask(splitting_method, height, width, strips_vertical_n=None, strips_horizontal_n=None, strips_height=None, strips_width=None, equal_segments=True, even_width=True, lines_n=5, points_k=0, hierarchical=False, points_n=5, warning_callback=None):
     mask = np.zeros((height, width), dtype=np.uint8)
     
     match splitting_method:
@@ -28,15 +28,15 @@ def generate_mask(splitting_method, height, width, strips_vertical_n=None, strip
             return segmented_mask(mask, height, width, strips_vertical_n, strips_horizontal_n, equal_segments, even_width)
         case SplittingMethod.STRAIGHT_POLYGONS:
             if hierarchical:
-                return hierarchical_random_lines_mask(mask, height, width, lines_n)
+                return hierarchical_random_lines_mask(mask, height, width, lines_n, warning_callback)
             else:
-                return polylines_mask(mask, height, width, lines_n, 0)
+                return polylines_mask(mask, height, width, lines_n, 0, warning_callback)
         case SplittingMethod.POLYLINE_POLYGONS:
-            return polylines_mask(mask, height, width, lines_n, points_k)
+            return polylines_mask(mask, height, width, lines_n, points_k, warning_callback)
         case SplittingMethod.VORONOI_POLYGONS:
-            return voronoi_mask(mask, height, width, points_n)
+            return voronoi_mask(mask, height, width, points_n, warning_callback)
         case SplittingMethod.BEZIER_CURVES:
-            return polylines_mask(mask, height, width, lines_n, points_k, True)
+            return polylines_mask(mask, height, width, lines_n, points_k, warning_callback, True)
         case _:
             return np.zeros((height, width))
 
@@ -129,7 +129,7 @@ def segmented_mask(mask, height, width, strips_vertical_n, strips_horizontal_n, 
     max_strips = width // min_fragment
     if max_strips < 1:
         return mask
-    max_strips = min(20, max_strips)
+    max_strips = min(30, max_strips)
     
     if strips_vertical_n is None:
         strips_vertical_n = int(random_normal_ints(2, max_strips, size=1)[0])
@@ -137,6 +137,9 @@ def segmented_mask(mask, height, width, strips_vertical_n, strips_horizontal_n, 
     if even_width:
         strips_width = width // strips_vertical_n
         vertical_cut_points = np.arange(strips_width, width, strips_width, dtype=int)
+        if len(vertical_cut_points) > 0:
+            if width - vertical_cut_points[-1] < min_fragment:
+                vertical_cut_points = vertical_cut_points[:-1]
     else:
         vertical_cut_points = random_cuts(width, max_strips, strips_vertical_n)
 
@@ -187,7 +190,7 @@ def is_cut_valid(mask):
             return False # too small part found
     return True
 
-def hierarchical_random_lines_mask(mask, height, width, lines_n):
+def hierarchical_random_lines_mask(mask, height, width, lines_n, warning_callback):
     cuts_done = 0
     attempts = 0
     max_attempts = 200
@@ -235,14 +238,18 @@ def hierarchical_random_lines_mask(mask, height, width, lines_n):
         else:
             attempts += 1
 
+    if cuts_done != lines_n:
+        if warning_callback is not None:
+            warning_callback(f"Time limit exceeded. Only {cuts_done} out of {lines_n} lines were drawn.")
+
     return mask
 
-def polylines_mask(mask, height, width, lines_n, points_k, bezier=False):
+def polylines_mask(mask, height, width, lines_n, points_k, warning_callback, bezier=False):
     max_attempts = 200
     lines_drawn = 0
     attempts = 0
 
-    while lines_drawn < lines_n:
+    while lines_drawn < lines_n and attempts < max_attempts:
         # two random edges and points on those edges
         edges = np.random.choice(4, size=2, replace=False)
         pt_start = get_random_point_on_edge(edges[0], width, height)
@@ -268,9 +275,14 @@ def polylines_mask(mask, height, width, lines_n, points_k, bezier=False):
         else:
             attempts += 1
 
+    if lines_drawn != lines_n:
+        print("AAAAA")
+        if warning_callback is not None:
+            warning_callback(f"Time limit exceeded. Only {lines_drawn} out of {lines_n} lines were drawn.")
+
     return mask
 
-def voronoi_mask(mask, height, width, points_n):
+def voronoi_mask(mask, height, width, points_n, warning_callback):
     # TODO: może dodać manhattan distance, ale wtedy już nie z biblioteką cv2
     
     rect = (0, 0, width, height)
@@ -298,6 +310,10 @@ def voronoi_mask(mask, height, width, points_n):
                 attempts = 0
             else:
                 attempts += 1
+
+    if len(accepted_points) != points_n:
+        if warning_callback is not None:
+            warning_callback(f"Time limit exceeded. Only {len(accepted_points)} out of {points_n} centers used.")
         
     facets, centers = subdiv.getVoronoiFacetList([])
     

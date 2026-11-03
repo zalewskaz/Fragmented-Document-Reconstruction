@@ -52,7 +52,7 @@ class MainWindow(ctk.CTk):
         self.setup_content_area()
         self.setup_status_bar()
 
-        self.sidebar = SidebarFrame(master=self, cmd_preview_split=self.preview_split_action, cmd_run=self.run_action)
+        self.sidebar = SidebarFrame(master=self, cmd_preview_split=self.preview_split_action, cmd_run=self.run_action, warning_callback=self.show_warning)
         self.sidebar.grid(row=1, column=1, sticky="nsew")
 
     def setup_top_toolbar(self):
@@ -253,8 +253,9 @@ class MainWindow(ctk.CTk):
         image = ProjectSession.original_image.copy()
         height, width = image.shape[:2]
         dynamic_params = self.sidebar.get_split_parameters()
+        current_method = self.sidebar.split_opt_dropdown.get()
 
-        ProjectSession.mask = mask_generator.generate_mask(ProjectSession.splitting_method, height, width, **dynamic_params)
+        ProjectSession.mask = mask_generator.generate_mask(current_method, height, width, **dynamic_params)
 
         image[ProjectSession.mask == 1] = [0, 0, 255]
 
@@ -299,7 +300,8 @@ class MainWindow(ctk.CTk):
         # generate a mask if it hasn't been generated already
         if ProjectSession.mask is None:
             dynamic_params = self.sidebar.get_split_parameters()
-            ProjectSession.mask = mask_generator.generate_mask(ProjectSession.splitting_method, height, width, **dynamic_params)
+            current_method = self.sidebar.split_opt_dropdown.get()
+            ProjectSession.mask = mask_generator.generate_mask(current_method, height, width, **dynamic_params)
 
         pieces_on_background = self.fragment_image(image, ProjectSession.mask)
 
@@ -344,7 +346,8 @@ class MainWindow(ctk.CTk):
                 image = read_image(path)
                 height, width = image.shape[:2]
                 dynamic_params = self.sidebar.get_split_parameters()
-                mask = mask_generator.generate_mask(ProjectSession.splitting_method, height, width, **dynamic_params)
+                current_method = self.sidebar.split_opt_dropdown.get()
+                mask = mask_generator.generate_mask(current_method, height, width, **dynamic_params)
 
                 pieces_on_background = self.fragment_image(image, mask)
                 save_image_as_png(self.save_location_path, path, pieces_on_background)
@@ -359,3 +362,8 @@ class MainWindow(ctk.CTk):
 
         if failed:
             messagebox.showwarning("Batch Finished With Errors", summary + "\n\nFailed:\n" + "\n".join(failed))
+        else:
+            messagebox.showinfo("Batch Finished", summary)
+
+    def show_warning(self, message):
+        messagebox.showwarning("Time limit reached", message)
