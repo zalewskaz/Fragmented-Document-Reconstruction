@@ -72,7 +72,10 @@ def rotate_fragment(fragment: ImageFragment, angle: float) -> ImageFragment:
     )
 
 
-def rotate_fragments_randomly(fragments_list: list[ImageFragment], rng: random.Random | None = None) -> list[ImageFragment]:
+def rotate_fragments_randomly(fragments_list: list[ImageFragment]) -> list[ImageFragment]:
     """Rotates each piece by its own random angle between 0 and 360 degrees."""
-    rng = rng or random.Random()
-    return [rotate_fragment(frag, rng.uniform(0, 360)) for frag in fragments_list]
+    return [rotate_fragment(frag, random.uniform(0, 360)) for frag in fragments_list]
+
+def rotate_fragments_90deg(fragments_list: list[ImageFragment]) -> list[ImageFragment]:
+    """Rotates each piece by its own random angle: 0, 90, 180, 270 degrees."""
+    return [rotate_fragment(frag, random.choice([0, 90, 180, 270])) for frag in fragments_list]
