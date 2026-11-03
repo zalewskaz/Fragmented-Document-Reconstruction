@@ -533,9 +533,9 @@ class SidebarFrame(ctk.CTkFrame):
         
         pass
         
-    # TODO resetowanie parametrów   
     def reset_params_action(self):
-        pass
+        splitting_method = self.get_splitting_method()
+        self.split_parameters_show(splitting_method)
 
     def get_split_parameters(self):
         current_method = self.split_opt_dropdown.get()
