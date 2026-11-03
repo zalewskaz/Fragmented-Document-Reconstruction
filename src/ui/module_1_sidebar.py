@@ -326,8 +326,8 @@ class SidebarFrame(ctk.CTkFrame):
                     self.dynamic_params_frame, 
                     start_value=5, 
                     step=1, 
-                    max_value=40,
-                    command=on_vertical_n_typing)
+                    max_value=40
+                    )
                 self.strips_vertical_n_entry.grid(row=2, column=1, pady=5, sticky="ew")
 
                 ctk.CTkLabel(
@@ -335,12 +335,12 @@ class SidebarFrame(ctk.CTkFrame):
                     text="Number of horizontal strips:"
                 ).grid(row=3, column=0, padx=(0, 10), pady=5, sticky="w")
                 
-                self.strips_vertical_n_entry = CTkSpinbox(
+                self.strips_horizontal_n_entry = CTkSpinbox(
                     self.dynamic_params_frame, 
                     start_value=5, 
                     step=1, 
-                    max_value=40,
-                    command=on_horizontal_n_typing)
+                    max_value=40
+                    )
                 self.strips_horizontal_n_entry.grid(row=3, column=1, pady=5, sticky="ew")
 
             case SplittingMethod.SEGMENTED_STRIPS:
@@ -417,8 +417,8 @@ class SidebarFrame(ctk.CTkFrame):
                     self.dynamic_params_frame, 
                     start_value=5, 
                     step=1, 
-                    max_value=40,
-                    command=on_vertical_n_typing)
+                    max_value=40
+                    )
                 self.strips_vertical_n_entry.grid(row=4, column=1, pady=5, sticky="ew")
 
                 ctk.CTkLabel(
@@ -430,8 +430,8 @@ class SidebarFrame(ctk.CTkFrame):
                     self.dynamic_params_frame, 
                     start_value=5, 
                     step=1,
-                    max_value=40,
-                    command=on_horizontal_n_typing)
+                    max_value=40
+                    )
                 self.strips_horizontal_n_entry.grid(row=5, column=1, pady=5, sticky="ew")
 
             case SplittingMethod.STRAIGHT_POLYGONS:
