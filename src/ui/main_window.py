@@ -23,8 +23,21 @@ ctk.set_default_color_theme("dark-blue")
 
 
 class MainWindow(ctk.CTk):
+    """
+    The main application window for the document fragmentation tool.
+
+    Manages the overall layout including the top toolbar, central content 
+    display area, sidebar for parameter configuration, and status bar. It 
+    maintains the global state of the loaded images and save directories, 
+    and drives the image processing pipeline.
+    """
 
     def __init__(self):
+        """
+        Initializes the main window, configures grid layouts, sets up UI 
+        components, and establishes the initial session state.
+        """
+
         super().__init__()
 
         self.title("Fragmented Document Reconstruction")
@@ -56,6 +69,8 @@ class MainWindow(ctk.CTk):
         self.sidebar.grid(row=1, column=1, sticky="nsew")
 
     def setup_top_toolbar(self):
+        """Builds and grids the top toolbar containing file actions and module switching."""
+
         self.toolbar_frame = ctk.CTkFrame(self, height=65, corner_radius=0, fg_color=("#2b2b2b", "#1f1f1f"))
         self.toolbar_frame.grid(row=0, column=0, columnspan=2, sticky="ew")
 
@@ -77,6 +92,8 @@ class MainWindow(ctk.CTk):
         self.module_switch.set("Module 1: Cutter")
 
     def setup_content_area(self):
+        """Initializes the central viewing area for image previews and final results."""
+
         self.content_frame = ctk.CTkFrame(self, fg_color="transparent")
         self.content_frame.grid(row=1, column=0, sticky="nsew", padx=20, pady=20)
 
@@ -92,15 +109,23 @@ class MainWindow(ctk.CTk):
         self.display_label.grid(row=0, column=0)
 
     def setup_status_bar(self):
-        # bottom bar for short info messages
+        """Sets up the lower status bar for displaying temporary info messages."""
+
         self.status_frame = ctk.CTkFrame(self, height=28, corner_radius=0, fg_color=("#2b2b2b", "#1f1f1f"))
         self.status_frame.pack_propagate(False)
         self.status_label = ctk.CTkLabel(self.status_frame, text="", anchor="w", font=ctk.CTkFont(size=12))
         self.status_label.pack(side="left", fill="x", expand=True, padx=20, pady=2)
 
     def set_status(self, text: str, auto_hide: bool = True):
-        # auto_hide=True: the message shows up and disappears after a few seconds
-        # auto_hide=False: the message stays until the next one replaces it (used for batch mode progress)
+        """
+        Displays a message in the status bar with an optional auto-hide timer.
+
+        Args:
+            text (str): The message to display.
+            auto_hide (bool, optional): If True, hides the message after a set delay 
+                (STATUS_HIDE_AFTER_MS). If False, persists until overwritten. Defaults to True.
+        """
+        
         start_height = self.status_frame.cget("height") if self.status_frame.winfo_manager() else 0
 
         self.status_label.configure(text=text)
@@ -114,6 +139,8 @@ class MainWindow(ctk.CTk):
             self.after(STATUS_HIDE_AFTER_MS, lambda: self.hide_status(text))
 
     def show_status(self, text: str, height: int):
+        """Animates the appearance of the status bar."""
+        
         # stop if a newer message has replaced this one 
         if self.status_label.cget("text") != text:
             return
@@ -124,6 +151,8 @@ class MainWindow(ctk.CTk):
             self.after(15, self.show_status, text, height)
 
     def hide_status(self, text: str, height: int = 28):
+        """Animates the disappearance of the status bar."""
+        
         # hide the bar only if no newer message has replaced this one in the meantime
         if self.status_label.cget("text") != text:
             return
@@ -136,9 +165,19 @@ class MainWindow(ctk.CTk):
         self.after(15, self.hide_status, text, height - 2)
 
     def switch_view(self, view_name: str):
+        """Switches the UI context between different application modules."""
+        
         pass
 
     def handle_menu_action(self, choice: str):
+        """
+        Handles dropdown menu selections for loading files, directories, 
+        or updating the designated save path.
+
+        Args:
+            choice (str): The menu option selected by the user.
+        """
+        
         project_root = Path(__file__).resolve().parent.parent.parent
         data_dir = project_root / "data"
         data_dir.mkdir(parents=True, exist_ok=True)
@@ -189,10 +228,14 @@ class MainWindow(ctk.CTk):
         self.action_menu.set("File Actions...")
 
     def menu_options(self) -> list[str]:
+        """Generates dynamic menu options based on current UI state."""
+        
         save_option = CHANGE_SAVE_LOCATION if self.save_location_path is not None else SELECT_SAVE_LOCATION
         return ["Select File", "Select Directory", save_option]
 
     def choose_save_location(self) -> bool:
+        """Prompts the user to select an output directory for saved files."""
+        
         if self.save_location_path is not None and self.save_location_path.is_dir():
             initial_dir = self.save_location_path
         else:
@@ -211,7 +254,13 @@ class MainWindow(ctk.CTk):
         return False
 
     def ensure_image_loaded(self) -> bool:
-        """Checks if there's an image to work on - if not, tells the user to load one first."""
+        """
+        Validates that an image has been successfully loaded into the session.
+
+        Returns:
+            bool: True if an image is loaded, False otherwise (triggers a UI warning to load an image first).
+        """
+        
         if ProjectSession.original_image is None:
             messagebox.showwarning(
                 "No Image Loaded",
@@ -221,14 +270,26 @@ class MainWindow(ctk.CTk):
         return True
 
     def ensure_save_location(self) -> bool:
-        """If no save folder was chosen yet, opens the folder picker. Returns False if the user cancels."""
+        """
+        Validates that a save directory is selected, displaying a pop-up that leads to folder picker if not.
+
+        Returns:
+            bool: True if a save path exists or is newly selected, False if the user cancels folder selection.
+        """
+        
         if self.save_location_path is not None:
             return True
 
         return self.choose_save_location()
 
     def render_image_on_ui(self, cv_img):
-        """Converts an OpenCV matrix (BGR) into a format supported by CustomTkinter (RGB -> Pillow -> CTkImage) and displays it."""
+        """
+        Converts an OpenCV BGR array into a format supported by CustomTkinter (RGB -> Pillow -> CTkImage) and displays it.
+
+        Args:
+            cv_img (np.ndarray): The OpenCV image matrix to render.
+        """
+        
         rgb_image = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
         pil_image = Image.fromarray(rgb_image)
 
@@ -241,7 +302,9 @@ class MainWindow(ctk.CTk):
         self.display_label.configure(text="", image=self.current_image_display)
 
     def preview_split_action(self):
-        """ Shows the image with drawn cuts generated by the selected splitting method and its parameters. """
+        """
+        Generates and renders a visual preview of the calculated cut lines on the source image.
+        """
         if not self.ensure_image_loaded():
             return
 
@@ -265,7 +328,17 @@ class MainWindow(ctk.CTk):
         self.sidebar.set_save_enabled(False)
 
     def fragment_image(self, image: np.ndarray, mask: np.ndarray) -> np.ndarray:
-        """Cuts the image into pieces, rotates them (if such option is selected) and scatters them on a background."""
+        """
+        Executes the full fragmentation pipeline on a single image: cuts the image into pieces, rotates them (if such option is selected) and scatters them on a background.
+
+        Args:
+            image (np.ndarray): The original source image matrix.
+            mask (np.ndarray): The binary cut mask.
+
+        Returns:
+            np.ndarray: The finalized, composited image of the scattered fragments.
+        """
+        
         height, width = image.shape[:2]
 
         # cut the image into pieces along the mask lines
@@ -290,6 +363,14 @@ class MainWindow(ctk.CTk):
         return pieces_on_background
 
     def run_action(self):
+        """
+        Executes the fragmentation task based on the current UI parameters.
+
+        In single-file mode, it renders the result to the screen, pending manual save.
+        In batch mode, it processes and saves the first image, then triggers `run_batch` 
+        to process the remaining queue automatically.
+        """
+        
         if not self.ensure_image_loaded():
             return
 
@@ -339,7 +420,8 @@ class MainWindow(ctk.CTk):
             self.action_menu.configure(state="normal")
 
     def save_action(self):
-        """Single mode - saves the result of the last Run."""
+        """Handles manual save requests for the currently processed single image."""
+
         if ProjectSession.pieces_on_background is None:
             return
 
@@ -356,12 +438,16 @@ class MainWindow(ctk.CTk):
 
     def run_batch(self, paths: list[Path]):
         """
-        Batch mode - goes through the rest of the images in the folder using the same settings.
+        Iterates over a queue of images to dynamically mask, fragment, and save them automatically.
 
-        The first image is already done at this point (using the mask from the preview). Every other
-        image gets a fresh mask made with the same method and parameters, because the images
-        can have different sizes, so one mask wouldn't fit them all.
+        Each queued image generates its own fresh mask using the currently selected 
+        method and parameters, ensuring accurate splitting across varying document 
+        dimensions within the directory.
+
+        Args:
+            paths (list[Path]): A list of pathlib.Path objects pointing to the remaining images in the batch queue.
         """
+        
         saved_count = 1  # the first image was already saved in run_action
         failed = []
         total = len(paths) + 1
@@ -394,4 +480,5 @@ class MainWindow(ctk.CTk):
             messagebox.showinfo("Batch Finished", summary)
 
     def show_warning(self, message):
+        """Displays a warning dialog to the user."""
         messagebox.showwarning("Time limit reached", message)
