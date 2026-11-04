@@ -5,6 +5,22 @@ from models import SplittingMethod, ProjectSession, RotationOption, EdgePixelAtt
 from .CTkSpinbox import CTkSpinbox
 
 class SidebarFrame(ctk.CTkFrame):
+    """
+    A sidebar widget containing parameter controls and action buttons for the first module of the application.
+
+    This frame holds the UI elements necessary to select a splitting method, 
+    adjust its specific parameters dynamically, and trigger main actions 
+    like previewing the split, running the algorithm, and saving the results.
+
+    Args:
+        master (Any): The parent widget to which this sidebar belongs.
+        cmd_preview_split (callable): Callback function executed when the "Preview Split" button is pressed.
+        cmd_run (callable): Callback function executed when the "Run" button is pressed.
+        cmd_save (callable): Callback function executed when the "Save" button is pressed.
+        warning_callback (callable): Function used by the backend to display UI warning pop-ups.
+        **kwargs: Additional keyword arguments passed to the underlying CTkFrame.
+    """
+
     def __init__(self, master, cmd_preview_split, cmd_run, cmd_save, warning_callback, **kwargs):
         super().__init__(master, width=220, corner_radius=0, **kwargs)
         self.grid_columnconfigure(0, weight=1)
@@ -27,7 +43,7 @@ class SidebarFrame(ctk.CTkFrame):
         self.param_label.grid(row=0, column=0, columnspan=2, padx=10, pady=10)
 
         # Cutting mode selection
-        # może to jeszcze rozdzielić, jak wyjdzie za dużo w jednym dropdownie
+        # TODO: optionally change into two dropdowns
         self.split_opt_container = ctk.CTkFrame(self.param_frame, fg_color="transparent")
         self.split_opt_container.grid(row=1, column=0, columnspan=2, padx=20, pady=10, sticky="ew")
         self.split_opt_container.grid_columnconfigure(1, weight=1)
@@ -48,6 +64,7 @@ class SidebarFrame(ctk.CTkFrame):
         self.split_opt_dropdown.grid(row=0, column=1, columnspan=2, sticky="ew")
         self.split_opt_dropdown.set(SplittingMethod.EVEN_VERTICAL.value)
 
+        # Parameters for the selected splitting method
         self.dynamic_params_frame = ctk.CTkFrame(self.param_frame, fg_color="transparent")
         self.dynamic_params_frame.grid(row=2, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
         self.dynamic_params_frame.grid_columnconfigure(1, weight=1)
@@ -130,7 +147,7 @@ class SidebarFrame(ctk.CTkFrame):
         self.save_button.grid(row=6, column=0, padx=20, pady=10)
 
     def set_batch_mode(self, is_batch: bool):
-        """Batch mode has one "Run & Save" button, single mode has separate "Run" and "Save" buttons."""
+        """Configures the UI layout for batch mode (one "Run & Save" button) or single mode (separate "Run" and "Save" buttons)."""
         if is_batch:
             self.run_button.configure(text="Run & Save")
             self.save_button.grid_remove()
@@ -140,28 +157,40 @@ class SidebarFrame(ctk.CTkFrame):
         self.set_save_enabled(False)
 
     def set_batch_running(self, running: bool):
-        """While the batch is running Run and Preview are locked, so the run can't be started twice."""
+        """Locks or unlocks the Run and Preview buttons during batch processing, so the run can't be started twice."""
         self.run_button.configure(state="disabled" if running else "normal")
         self.prev_split_button.configure(state="disabled" if running else "normal")
 
     def set_save_enabled(self, enabled: bool):
+        """Enables or disables the Save button."""
         self.save_button.configure(state="normal" if enabled else "disabled")
 
     def get_splitting_method(self):
+        """Retrieves the currently selected splitting method."""
         return self.split_opt_dropdown.get()
 
     def get_rotation_option(self) -> str:
+        """Retrieves the currently selected rotation option."""
         return self.rotation_dropdown.get()
 
     def get_edge_pixel_option(self) -> str:
-            return self.edge_pixel_dropdown.get()
+        """Retrieves the currently selected edge pixel generation option."""
+        return self.edge_pixel_dropdown.get()
 
     def split_parameters_show(self, splitting_mode_str):
+        """
+        Shows parameters for the selected splitting method.
+
+        Args:
+            splitting_mode_str (string): Name of the selected splitting method.
+        """
+
         splitting_mode = SplittingMethod(splitting_mode_str)
 
         for widget in self.dynamic_params_frame.winfo_children():
             widget.destroy()
 
+        # shows proper parameters for the selected method
         match splitting_mode:
             case SplittingMethod.EVEN_VERTICAL | SplittingMethod.EVEN_HORIZONTAL:
                 def on_n_typing(value):
@@ -180,7 +209,6 @@ class SidebarFrame(ctk.CTkFrame):
                 self.strips_n_entry = CTkSpinbox(
                     self.dynamic_params_frame, 
                     start_value=5, 
-                    step=1, 
                     max_value=40,
                     command=on_n_typing)
                 self.strips_n_entry.grid(row=0, column=1, pady=5, sticky="ew")
@@ -193,7 +221,6 @@ class SidebarFrame(ctk.CTkFrame):
                 self.strips_width_entry = CTkSpinbox(
                     self.dynamic_params_frame, 
                     start_value=40, 
-                    step=1, 
                     min_value=20, 
                     max_value=200,
                     command=on_width_typing)
@@ -227,7 +254,6 @@ class SidebarFrame(ctk.CTkFrame):
                 self.strips_n_entry = CTkSpinbox(
                     self.dynamic_params_frame, 
                     start_value=5, 
-                    step=1, 
                     max_value=40
                     )
                 self.strips_n_entry.grid(row=1, column=1, pady=5, sticky="ew")
@@ -257,7 +283,6 @@ class SidebarFrame(ctk.CTkFrame):
                 self.strips_vertical_n_entry = CTkSpinbox(
                     self.dynamic_params_frame, 
                     start_value=5, 
-                    step=1, 
                     max_value=40,
                     command=on_vertical_n_typing)
                 self.strips_vertical_n_entry.grid(row=0, column=1, pady=5, sticky="ew")
@@ -270,7 +295,6 @@ class SidebarFrame(ctk.CTkFrame):
                 self.strips_width_entry = CTkSpinbox(
                     self.dynamic_params_frame, 
                     start_value=40, 
-                    step=1, 
                     min_value=20, 
                     max_value=200,
                     command=on_width_typing)
@@ -285,7 +309,6 @@ class SidebarFrame(ctk.CTkFrame):
                 self.strips_horizontal_n_entry = CTkSpinbox(
                     self.dynamic_params_frame, 
                     start_value=5, 
-                    step=1, 
                     max_value=40,
                     command=on_horizontal_n_typing)
                 self.strips_horizontal_n_entry.grid(row=2, column=1, pady=5, sticky="ew")
@@ -298,7 +321,6 @@ class SidebarFrame(ctk.CTkFrame):
                 self.strips_height_entry = CTkSpinbox(
                     self.dynamic_params_frame, 
                     start_value=40, 
-                    step=1, 
                     min_value=20, 
                     max_value=200,
                     command=on_height_typing)
@@ -350,7 +372,6 @@ class SidebarFrame(ctk.CTkFrame):
                 self.strips_vertical_n_entry = CTkSpinbox(
                     self.dynamic_params_frame, 
                     start_value=5, 
-                    step=1, 
                     max_value=40
                     )
                 self.strips_vertical_n_entry.grid(row=2, column=1, pady=5, sticky="ew")
@@ -363,7 +384,6 @@ class SidebarFrame(ctk.CTkFrame):
                 self.strips_horizontal_n_entry = CTkSpinbox(
                     self.dynamic_params_frame, 
                     start_value=5, 
-                    step=1, 
                     max_value=40
                     )
                 self.strips_horizontal_n_entry.grid(row=3, column=1, pady=5, sticky="ew")
@@ -440,7 +460,6 @@ class SidebarFrame(ctk.CTkFrame):
                 self.strips_vertical_n_entry = CTkSpinbox(
                     self.dynamic_params_frame, 
                     start_value=5, 
-                    step=1, 
                     max_value=40
                     )
                 self.strips_vertical_n_entry.grid(row=4, column=1, pady=5, sticky="ew")
@@ -453,7 +472,6 @@ class SidebarFrame(ctk.CTkFrame):
                 self.strips_horizontal_n_entry = CTkSpinbox(
                     self.dynamic_params_frame, 
                     start_value=5, 
-                    step=1,
                     max_value=40
                     )
                 self.strips_horizontal_n_entry.grid(row=5, column=1, pady=5, sticky="ew")
@@ -475,7 +493,6 @@ class SidebarFrame(ctk.CTkFrame):
                 self.lines_n_entry = CTkSpinbox(
                     self.dynamic_params_frame,
                     start_value=10,
-                    step=1,
                     min_value=2,
                     max_value=100
                     )
@@ -490,7 +507,6 @@ class SidebarFrame(ctk.CTkFrame):
                 self.lines_n_entry = CTkSpinbox(
                     self.dynamic_params_frame,
                     start_value=5,
-                    step=1,
                     min_value=2,
                     max_value=10
                     )
@@ -504,7 +520,6 @@ class SidebarFrame(ctk.CTkFrame):
                 self.points_k_entry = CTkSpinbox(
                     self.dynamic_params_frame,
                     start_value=2,
-                    step=1,
                     min_value=0,
                     max_value=5
                     )
@@ -519,7 +534,6 @@ class SidebarFrame(ctk.CTkFrame):
                 self.points_n_entry = CTkSpinbox(
                     self.dynamic_params_frame,
                     start_value=5,
-                    step=1,
                     min_value=2,
                     max_value=150
                     )
@@ -534,7 +548,6 @@ class SidebarFrame(ctk.CTkFrame):
                 self.lines_n_entry = CTkSpinbox(
                     self.dynamic_params_frame,
                     start_value=5,
-                    step=1,
                     min_value=1,
                     max_value=15
                     )
@@ -548,7 +561,6 @@ class SidebarFrame(ctk.CTkFrame):
                 self.points_k_entry = CTkSpinbox(
                     self.dynamic_params_frame,
                     start_value=2,
-                    step=1,
                     min_value=1,
                     max_value=5
                     )
@@ -557,10 +569,12 @@ class SidebarFrame(ctk.CTkFrame):
         pass
         
     def reset_params_action(self):
+        """Resets parameters to their default state."""
         splitting_method = self.get_splitting_method()
         self.split_parameters_show(splitting_method)
 
     def get_split_parameters(self):
+        """Retrieves the currently selected parameters."""
         current_method = self.split_opt_dropdown.get()
         params = {}
         params["warning_callback"] = self.warning_callback
