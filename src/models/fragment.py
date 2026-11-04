@@ -7,7 +7,7 @@ class ImageFragment:
     Represents a single puzzle piece.
     
     Attributes:
-        data (np.ndarray): The image matrix of the piece with an alpha channel.
+        data (np.ndarray): The image matrix of the piece in the BGRA format.
                            Transparent background pixels have an alpha of 0.
         original_x (int): The x-coordinate of the piece's bounding box in the original image.
         original_y (int): The y-coordinate of the piece's bounding box in the original image.

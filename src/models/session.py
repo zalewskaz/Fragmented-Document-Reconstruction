@@ -13,8 +13,8 @@ class ProjectSession:
         original_image (np.ndarray, optional): Original image matrix imported into the program.
         bw_image (np.ndarray, optional): Grayscaled image matrix.
         binarized_image (np.ndarray, optional): Binarized image matrix.
-        mask (np.ndarray, optional): Mask generated to cut the imported image.
-        fragments (List[ImageFragment]): List of fragments created by cutting the image.
+        mask (np.ndarray, optional): The mask representing cut lines on the image; stored as a binary matrix where 1 = cut line.
+        fragments (List[ImageFragment]): List of fragments created by cutting the image, each stored as a separate BGRA image matrix with transparent background.
         pieces_on_background (np.ndarray, optional): Image matrix of fragments scattered on a solid background.
     """
 

@@ -6,7 +6,7 @@ import cv2
 import numpy as np
 import pytest
 
-from utils import io
+from src.utils import io
 
 # ---------------------------------------------------------------------
 # get_valid_paths
