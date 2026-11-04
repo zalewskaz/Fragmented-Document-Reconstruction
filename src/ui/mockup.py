@@ -1,5 +1,5 @@
-"""Mockup GUI aplikacji Fragmented Document Reconstruction (CustomTkinter).
-Uruchom:  ten kod i widoki zmieniaj klikajac w przelacznik w górnym pasku."""
+"""Mockup GUI aplikacji Fragmented Document Reconstruction.
+Uruchom ten kod; zmieniak widoki za pomoca przelacznika w górnym pasku."""
 import sys, textwrap
 import customtkinter as ctk
 from PIL import Image, ImageDraw, ImageFont

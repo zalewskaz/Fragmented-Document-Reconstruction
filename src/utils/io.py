@@ -18,10 +18,23 @@ VALID_EXTENSIONS = {
 
 def get_valid_paths(path_str: str) -> List[Path]:
     """
-    Validates a file or directory and returns a list of valid image paths.
-    Raises a custom exception if the path doesn't lead to any valid image files. 
-    Does not load images into memory.
+    Validates a file or directory path and resolves all supported image files within it.
+
+    If a single file path is provided, it verifies the extension. If a directory 
+    is provided, it scans the directory for all files matching supported image 
+    extensions. 
+
+    Args:
+        path_str (str): The string representation of the file or directory path to check.
+
+    Returns:
+        List[Path]: A list of pathlib.Path objects pointing to valid image files.
+
+    Raises:
+        InvalidImageInputError: If the path does not exist, if a single file has an 
+        unsupported extension, or if a directory contains no supported image files.
     """
+    
     path = Path(path_str)
     
     if not path.exists():
@@ -47,6 +60,19 @@ def get_valid_paths(path_str: str) -> List[Path]:
     return valid_paths
 
 def read_image(path_obj: Path) -> np.ndarray:
+    """
+    Reads an image from the filesystem into a NumPy array. 
+
+    Args:
+        path_obj (Path): The pathlib.Path object pointing to the image file.
+
+    Returns:
+        np.ndarray: A 3-channel (BGR) NumPy array representing the loaded image.
+
+    Raises:
+        InvalidImageInputError: If the file cannot be read or decoded into an image array.
+    """
+    
     array_img = cv2.imdecode(np.fromfile(str(path_obj), dtype=np.uint8), cv2.IMREAD_COLOR)
             
     if array_img is None:
@@ -56,12 +82,24 @@ def read_image(path_obj: Path) -> np.ndarray:
 
 def save_image_as_png(output_dir: Path, original_file_path: Path, image: np.ndarray) -> Path:
     """
-    Save an OpenCV image as a PNG with a timestamped filename.
+    Saves an OpenCV image matrix to the filesystem as a PNG file with a timestamp.
 
     The output filename follows the format ``<original_filename>_<YYYYMMDD_HHMMSS>.png``.
 
-    Raises a custom exception if openCV fails to save the file.
+    Args:
+        output_dir (Path): The target directory where the image will be saved.
+        original_file_path (Path): The path of the source image, used to derive 
+            the base filename.
+        image (np.ndarray): The OpenCV image array to write to disk.
+
+    Returns:
+        Path: The absolute path to the newly saved PNG file.
+
+    Raises:
+        ImageSaveFailedError: If OpenCV fails to encode or write the image to the 
+        specified destination.
     """
+    
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # generate a filename in the format of: originalFileNameYYYYMMDD_HHMMSS

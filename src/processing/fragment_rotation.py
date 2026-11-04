@@ -9,12 +9,18 @@ PADDING = 5
 
 def rotate_fragment(fragment: ImageFragment, angle: float) -> ImageFragment:
     """
-    Rotates one piece by `angle` degrees (counter-clockwise) and returns it as a new fragment.
+    Rotates an image fragment by a specified angle counter-clockwise.
 
-    We make the canvas big enough so that no corner of the piece gets cut off, and then trim it
-    back down to the piece with the same 5 px transparent margin that split_image adds.
-    Alpha is kept at either 0 or 255, so the rest of the code can still treat "alpha > 0" as "this is the piece".
+    Args:
+        fragment (ImageFragment): The original image fragment to be rotated.
+        angle (float): The rotation angle in degrees (counter-clockwise).
+
+    Returns:
+        ImageFragment: A new ImageFragment instance containing the rotated image 
+        data with 5px transparent padding on each side, along with updated rotation 
+        metadata.
     """
+
     data = fragment.data
     h, w = data.shape[:2]
     channels = data.shape[2]
@@ -73,13 +79,38 @@ def rotate_fragment(fragment: ImageFragment, angle: float) -> ImageFragment:
 
 
 def rotate_fragments_randomly(fragments_list: list[ImageFragment]) -> list[ImageFragment]:
-    """Rotates each piece by its own random angle between 0 and 360 degrees."""
+    """Applies a continuous random rotation to a collection of image fragments.
+
+    Args:
+        fragments_list (list[ImageFragment]): The list of fragments to rotate.
+
+    Returns:
+        list[ImageFragment]: A new list of fragments, each independently rotated 
+        by a random angle between 0.0 and 360.0 degrees."""
     return [rotate_fragment(frag, random.uniform(0, 360)) for frag in fragments_list]
 
 def rotate_fragments_90deg(fragments_list: list[ImageFragment]) -> list[ImageFragment]:
-    """Rotates each piece by its own random angle: 0, 90, 180, 270 degrees."""
+    """
+    Applies a random orthogonal rotation to a collection of image fragments.
+
+    Args:
+        fragments_list (list[ImageFragment]): The list of fragments to rotate.
+
+    Returns:
+        list[ImageFragment]: A new list of fragments, each independently rotated 
+        by a randomly chosen angle of 0, 90, 180, or 270 degrees.
+    """
     return [rotate_fragment(frag, random.choice([0, 90, 180, 270])) for frag in fragments_list]
 
 def rotate_fragments_180deg(fragments_list: list[ImageFragment]) -> list[ImageFragment]:
-    """Rotates each piece by its own random angle: 0, 180 degrees."""
+    """
+    Applies a random flip-like rotation to a collection of image fragments.
+
+    Args:
+        fragments_list (list[ImageFragment]): The list of fragments to rotate.
+
+    Returns:
+        list[ImageFragment]: A new list of fragments, each independently rotated 
+        by a randomly chosen angle of either 0 or 180 degrees.
+    """
     return [rotate_fragment(frag, random.choice([0, 180])) for frag in fragments_list]
