@@ -9,6 +9,33 @@ def split_image(
     edge_pixel_option: str
 ) -> list[ImageFragment]:
 
+    """
+    Splits an image into individual fragments based on a provided split mask and resolves 
+    border pixels according to a specified attribution strategy.
+
+    Border pixels are either dropped entirely, assigned to one of the pieces they neighbor 
+    randomly, or deterministically assigned to one of the pieces they neighbour so that all 
+    pixels laying on a given edge get attributed to the same piece. 
+
+    Each fragmented image is extracted into a cropped bounding box with a 5-pixel transparent 
+    padding and an appended alpha channel.
+
+    Args:
+        original_image (np.ndarray): The source image array from which to extract pixel data.
+        mask (np.ndarray):  A binary mask where 0 represents the interior of the fragments and 
+                            1 represents the borders between fragments.
+        edge_pixel_option (str):    The strategy for handling border pixels. Must match a valid 
+                                    `EdgePixelAttributionOption` value.
+
+    Returns:
+        list[ImageFragment]:    A list of extracted image fragments. Each fragment contains padded 
+                                image data with an alpha channel, along with its original x and y 
+                                coordinates.
+
+    Raises:
+        ValueError: If an unknown `edge_pixel_option` is provided.
+    """
+    
     # invert the mask: fragments become 1 (foreground), borders become 0 (background) in order to be supported by cv2.connectedComponentsWithStats
     pieces_mask = (mask == 0).astype(np.uint8)
 
@@ -127,7 +154,22 @@ def get_neighboring_piece_labels(
     x: int,
     labels: np.ndarray
 ) -> set[int]:
-    """Returns the IDs of pieces directly adjacent to a given pixel."""
+    """
+    Identifies the unique IDs of all fragments adjacent to a given pixel.
+
+    This function checks the 4-way neighborhood (top, bottom, left, right) of the 
+    given coordinates within the label matrix. It ignores out-of-bounds coordinates 
+    and background pixels (label 0).
+
+    Args:
+        y (int): The y-coordinate of the target pixel.
+        x (int): The x-coordinate of the target pixel.
+        labels (np.ndarray): A 2D array of integers where each value corresponds 
+            to a distinct piece label (or 0 for background/unassigned).
+
+    Returns:
+        set[int]: A set containing the integer labels of all valid neighboring pieces.
+    """
 
     h, w = labels.shape
     neighboring_labels = set()

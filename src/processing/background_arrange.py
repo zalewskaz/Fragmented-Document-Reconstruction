@@ -9,12 +9,12 @@ LIGHT_BACKGROUND = (192, 192, 192, 255)
 
 def pick_background_colour(image: np.ndarray) -> tuple[int, int, int, int]:
     """
-    Picks a background colour that the pieces will stand out against.
+    Picks a background colour that the pieces will stand out against. 
 
     If the document is mostly light, we use a dark-gray background.
     If the document is mostly dark, we use a light-gray background.
 
-    Works for grayscale, BGR and BGRA images.
+    Works for BGR and BGRA images.
     """
     if image.shape[2] == 3:
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -28,6 +28,27 @@ def pick_background_colour(image: np.ndarray) -> tuple[int, int, int, int]:
 
 def arrange_on_background(height: int, width: int, fragments_list: list[ImageFragment],
                           bg_colour: tuple[int, int, int, int] = DARK_BACKGROUND) -> np.ndarray:
+    """
+    Randomly arranges a list of image fragments on a solid background without overlapping.
+
+    The function attempts to place each fragment at random coordinates. If a fragment 
+    cannot be placed without colliding with existing pieces after a set number of attempts, 
+    the background dynamically expands. Once all fragments are placed, the final image 
+    is cropped to tightly fit the bounding box of all placed pieces with a 5-pixel padding. 
+
+    Args:
+        height (int): The original image height, used to calculate the initial background dimensions.
+        width (int): The original image width, used to calculate the initial background dimensions.
+        fragments_list (list[ImageFragment]): A list of fragment objects to be placed. 
+            Each object must have a `data` attribute containing a NumPy array (either 
+            2-channel or 4-channel) representing the image data.
+        bg_colour (tuple[int, int, int, int], optional): An RGBA tuple defining the 
+            background color. Defaults to DARK_BACKGROUND.
+
+    Returns:
+        np.ndarray: A 4-channel (BGRA) NumPy array representing the final composed image 
+        containing all placed fragments.
+    """
     bg_h = int(1.5 * height)
     bg_w = int(1.5 * width)
     max_attempts = 100
@@ -95,23 +116,11 @@ def arrange_on_background(height: int, width: int, fragments_list: list[ImageFra
         roi = background[y-offset_y:y-offset_y+h, x-offset_x:x-offset_x+w]
         
         piece_data = frag.data
-        channels = piece_data.shape[2]
-        
-        # normalize 2-channel (Grayscale+Alpha) to 4-channel (BGRA+Alpha) to match background
-        if channels == 2:
-            gray, alpha = piece_data[..., 0], piece_data[..., 1]
-            piece_bgra = np.empty((h, w, 4), dtype=np.uint8)
-            piece_bgra[..., 0] = gray
-            piece_bgra[..., 1] = gray
-            piece_bgra[..., 2] = gray
-            piece_bgra[..., 3] = alpha
-        else:
-            piece_bgra = piece_data
-            
+                    
         # create a boolean mask of the piece's non-transparent pixels
-        alpha_mask = piece_bgra[..., -1] > 0
+        alpha_mask = piece_data[..., -1] > 0
         
         # overwrite only the non-transparent pixels in the region of interest
-        roi[alpha_mask] = piece_bgra[alpha_mask]
+        roi[alpha_mask] = piece_data[alpha_mask]
         
     return background
