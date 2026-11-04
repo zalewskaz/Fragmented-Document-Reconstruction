@@ -1,6 +1,23 @@
 import customtkinter as ctk
 
 class CTkSpinbox(ctk.CTkFrame):
+    """
+    A custom spinbox widget for CustomTkinter with increment and decrement arrows.
+
+    This widget combines a standard text entry with 'up' and 'down' buttons 
+    to easily adjust integer values within a specified range. It supports
+    validation, manual entry, and executing a callback function on change.
+
+    Args:
+        master (Any): The parent widget to which this spinbox belongs.
+        start_value (int, optional): The initial value displayed in the entry. Defaults to 2.
+        step (int, optional): The amount by which the value changes when buttons are clicked. Defaults to 1.
+        min_value (int, optional): The minimum allowed integer value. Defaults to 2.
+        max_value (int, optional): The maximum allowed integer value. Defaults to 10.
+        command (callable, optional): A callback function triggered whenever the value changes.
+        **kwargs: Additional keyword arguments passed to the underlying CTkFrame.
+    """
+    
     def __init__(self, master, start_value=2, step=1, min_value=2, max_value=10, command=None, **kwargs):
         super().__init__(master, **kwargs)
         
@@ -39,13 +56,32 @@ class CTkSpinbox(ctk.CTkFrame):
         self.btn_plus.grid(row=0, column=2, padx=(0, 3), pady=3)
 
     def _trigger_command(self):
+        """
+        Executes the assigned callback function with the current entry value.
+        """
+
         if self.command:
             self.command(self.entry.get())
 
     def _on_key_release(self, event):
+        """
+        Event handler for key release. Triggers the callback as the user types.
+
+        Args:
+            event (tk.Event): The Tkinter event object containing details about the keystroke.
+        """
+
         self._trigger_command()
 
     def _validate_entry(self, event=None):
+        """
+        Validates the text entry upon pressing Enter or losing focus. 
+        Clamps the value within the allowed min/max range or clears it if invalid.
+
+        Args:
+            event (tk.Event, optional): The Tkinter event object triggering the validation. Defaults to None.
+        """
+
         if self.entry.get().strip() == "":
             return
         try:
@@ -59,6 +95,13 @@ class CTkSpinbox(ctk.CTkFrame):
             self.clear()
 
     def _get_current_for_arrows(self):
+        """
+        Safely retrieves the current integer value from the entry for arrow operations.
+
+        Returns:
+            int: The current integer value, or the default start value if the entry is empty or invalid.
+        """
+
         if self.entry.get().strip() == "":
             return self.default_start
         try:
@@ -67,6 +110,10 @@ class CTkSpinbox(ctk.CTkFrame):
             return self.default_start
 
     def _increment(self):
+        """
+        Increases the current value by the defined step, up to the maximum value.
+        """
+
         val = self._get_current_for_arrows()
         if self.entry.get().strip() != "":
             val += self.step
@@ -76,6 +123,10 @@ class CTkSpinbox(ctk.CTkFrame):
         self.set(val)
 
     def _decrement(self):
+        """
+        Decreases the current value by the defined step, down to the minimum value.
+        """
+        
         val = self._get_current_for_arrows()
         if self.entry.get().strip() != "":
             val -= self.step
@@ -85,12 +136,27 @@ class CTkSpinbox(ctk.CTkFrame):
         self.set(val)
 
     def get(self):
+        """
+        Retrieves the current integer value from the spinbox.
+
+        Returns:
+            int or None: The current value as an integer, or None if the entry is empty or invalid.
+        """
+
         try:
             return int(self.entry.get())
         except ValueError:
             return None
 
     def set(self, value, trigger=True):
+        """
+        Sets a new integer value in the spinbox.
+
+        Args:
+            value (int): The new value to set. Will be clamped if it exceeds min_value or max_value.
+            trigger (bool, optional): Whether to trigger the assigned command callback. Defaults to True.
+        """
+
         self.entry.delete(0, ctk.END)
         if self.min_value is not None and value < self.min_value:
             self.entry.insert(0, str(self.min_value))
@@ -103,15 +169,29 @@ class CTkSpinbox(ctk.CTkFrame):
             self._trigger_command()
 
     def block(self):
+        """
+        Disables the spinbox, clearing its entry and deactivating the arrow buttons.
+        """
+
         self.btn_minus.configure(state="disabled")
         self.clear()
+        self.entry.configure(state="disabled")
         self.btn_plus.configure(state="disabled")
 
     def unblock(self):
+        """
+        Enables the spinbox, restoring the arrow buttons and the entry field.
+        """
+
         self.btn_minus.configure(state="enabled")
         self.btn_plus.configure(state="enabled")
+        self.entry.configure(state="normal")
         val = self._get_current_for_arrows()
         self.set(val)
 
     def clear(self):
+        """
+        Clears the entry field completely, leaving it empty.
+        """
+
         self.entry.delete(0, ctk.END)
