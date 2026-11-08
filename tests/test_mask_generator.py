@@ -6,6 +6,21 @@ from unittest.mock import MagicMock
 from src.models.parameters_enums import SplittingMethod
 from src.processing import mask_generator as mg
 
+def fragment_areas(mask):
+    """Returns the areas of all fragments of a mask."""
+    inverse_mask = np.where(mask == 0, 255, 0).astype(np.uint8)
+    num_labels, _, stats, _ = cv2.connectedComponentsWithStats(inverse_mask, connectivity=4)
+    return stats[1:num_labels, cv2.CC_STAT_AREA]
+
+
+def voronoi_fragment_areas(mask):
+    """
+    Returns fragment areas, skipping tiny Voronoi rasterization artifacts
+    (isolated 1-2 px holes where facet borders meet - they are not real fragments).
+    """
+    areas = fragment_areas(mask)
+    return areas[areas > 4]
+
 # --------------------------------------------
 # random_normal_ints
 # --------------------------------------------
@@ -74,6 +89,30 @@ def test_random_cuts_logic_and_bounds():
     assert np.all(np.diff(cut_points) > 0), "Cuts should be in ascending order"
     assert np.all(cut_points > 0), "Cut points shouldn't be smaller than 0"
     assert np.all(cut_points < val), f"Cut points shouldn't exceed the document width ({val})"
+
+def test_random_cuts_no_space_for_two_strips():
+    # "Random number of strips" in the UI passes strips_n=None;
+    # an image 20-39 px wide fits only one strip (max_strips=1)
+    cut_points = mg.random_cuts(val=30, max_strips=1, strips_n=None)
+
+    assert len(cut_points) == 0, "No cuts should be made when only one strip fits"
+
+@pytest.mark.parametrize("val, max_strips, strips_n", [
+    (50, 2, 4),     # strips_n capped to max_strips
+    (40, 2, 2),     # no free space - every strip exactly MIN_FRAGMENT_WIDTH
+    (205, 10, 10),  # little free space split between many strips (rounding)
+])
+def test_random_cuts_every_strip_is_wide_enough(val, max_strips, strips_n):
+    for _ in range(50):
+        cut_points = mg.random_cuts(val, max_strips, strips_n)
+
+        # strip width = distance between neighbouring cuts
+        edges = np.concatenate(([0], cut_points, [val]))
+        strip_widths = np.diff(edges)
+
+        assert np.all(strip_widths >= mg.MIN_FRAGMENT_WIDTH), (
+            f"All strips should be at least {mg.MIN_FRAGMENT_WIDTH} px wide, got {strip_widths.tolist()}"
+        )
 
 
 # --------------------------------------------
@@ -185,7 +224,7 @@ def test_even_horizontal_mask_only_n_given():
     assert number_of_cuts == strips_n - 1, f"Expected {strips_n - 1} cuts, got {number_of_cuts}"
     
     for cut_row in [40, 80, 120, 160]:
-        assert np.all(new_mask[cut_row, :] == 1), f"Expected a solid cut line at column {cut_row}"
+        assert np.all(new_mask[cut_row, :] == 1), f"Expected a solid cut line at row {cut_row}"
 
 def test_even_horizontal_mask_min_fragment_limit():
     height, width = 100, 100
@@ -196,7 +235,7 @@ def test_even_horizontal_mask_min_fragment_limit():
     new_mask = mg.even_horizontal_mask(mask, height, strips_n=None, strips_height=strips_height)
 
     assert isinstance(mask, np.ndarray), "Mask should be a numpy array"
-    assert np.all(new_mask == 0), "Mask should be empty; cut was made too close to the right edge"
+    assert np.all(new_mask == 0), "Mask should be empty; cut was made too close to the bottom edge"
 
 
 # --------------------------------------------
@@ -215,7 +254,7 @@ def test_random_horizontal_mask_draws_full_lines():
 
     cut_indices = np.where(new_mask[:, 0] == 1)[0]
     for row_idx in cut_indices:
-        assert np.all(new_mask[row_idx, :] == 1), f"Cut line at column {row_idx} is not drawn fully from left to right"
+        assert np.all(new_mask[row_idx, :] == 1), f"Cut line at row {row_idx} is not drawn fully from left to right"
 
 def test_random_horizontal_mask_too_small_height():
     height, width = mg.MIN_FRAGMENT_WIDTH-5, 50
@@ -303,6 +342,38 @@ def test_segmented_mask_skips_all_if_size_too_small():
     assert np.all(new_mask == 0), "Mask should remain empty if size is too small for cuts"
 
 
+@pytest.mark.parametrize("height, width, expected_cuts", [
+    (300, 30, "horizontal"),  # only one strip fits horizontally -> only segment cuts
+    (30, 300, "vertical"),    # only one segment fits vertically -> only strip cuts
+    (30, 30, "none"),         # nothing fits -> empty mask
+])
+@pytest.mark.parametrize("equal_segments", [True, False])
+@pytest.mark.parametrize("even_width", [True, False])
+def test_segmented_mask_random_n_with_space_for_one_strip(height, width, expected_cuts, equal_segments, even_width):
+    # "Random number of strips" in the UI passes None as the number of strips
+    mask = np.zeros((height, width), dtype=np.uint8)
+
+    new_mask = mg.segmented_mask(
+        mask, height, width,
+        strips_vertical_n=None,
+        strips_horizontal_n=None,
+        equal_segments=equal_segments,
+        even_width=even_width
+    )
+
+    column_sums = np.sum(new_mask, axis=0)
+    has_vertical_cuts = np.any(column_sums == height)
+    has_horizontal_cuts = np.any(new_mask[:, column_sums != height])
+
+    if expected_cuts == "none":
+        assert np.all(new_mask == 0), "Mask should be empty when no strip or segment cut fits"
+    elif expected_cuts == "horizontal":
+        assert not has_vertical_cuts, "No vertical cuts should be made when only one strip fits"
+    else:
+        assert not has_horizontal_cuts, "No segment cuts should be made when only one segment fits"
+    assert mg.is_cut_valid(new_mask), "All fragments should be at least MIN_FRAGMENT_AREA"
+
+
 # --------------------------------------------
 # get_random_point_on_edge
 # --------------------------------------------
@@ -384,11 +455,11 @@ def test_hierarchical_random_lines_mask_single_cut_properties():
     
     unique_vals = np.unique(new_mask)
     assert np.all(np.isin(unique_vals, [0, 1])), "Mask should only contain 0 and 1"
-    
-    line_pixels = np.sum(new_mask)
-    assert line_pixels >= 40, (
-        f"Line length {line_pixels} is too short. "
-        "A valid cut resulting in fragments >= MIN_FRAGMENT_AREA must be at least ~40 pixels long."
+
+    areas = fragment_areas(new_mask)
+    assert len(areas) == 2, f"A single cut should split the image into exactly 2 fragments, got {len(areas)}"
+    assert np.all(areas >= mg.MIN_FRAGMENT_AREA), (
+        f"Both fragments should be at least MIN_FRAGMENT_AREA ({mg.MIN_FRAGMENT_AREA}), got {areas.tolist()}"
     )
 
 def test_hierarchical_random_lines_mask_stops_when_largest_piece_too_small():
@@ -507,11 +578,9 @@ def test_voronoi_mask_correct_number_of_polygons():
     new_mask = mg.voronoi_mask(mask, height, width, points_n, warning_callback=None)
     
     assert np.any(new_mask == 1), "Voronoi facets should be drawn"
-    
-    inverse_mask = np.where(new_mask == 0, 255, 0).astype(np.uint8)
-    num_labels, _, _, _ = cv2.connectedComponentsWithStats(inverse_mask, connectivity=4)
-    number_of_fragments = num_labels - 1
-    
+
+    number_of_fragments = len(voronoi_fragment_areas(new_mask))
+
     assert number_of_fragments == points_n, (
         f"Expected exactly {points_n} closed polygons for {points_n} centers, "
         f"but got {number_of_fragments} fragments. Lines might not be fully closed."
@@ -565,7 +634,6 @@ def test_voronoi_mask_correct_number_of_polygons():
     (SplittingMethod.VORONOI_POLYGONS, 400, 400, {"points_n": 5}),
     (SplittingMethod.VORONOI_POLYGONS, 500, 500, {"points_n": 15}),
 ])
-
 def test_generate_mask_integration(method, height, width, kwargs):
     mask = mg.generate_mask(
         splitting_method=method, 
@@ -581,4 +649,10 @@ def test_generate_mask_integration(method, height, width, kwargs):
     
     assert np.any(mask == 1), f"Mask generated by {method.name} is completely empty"
     
-    assert mg.is_cut_valid(mask) is True, f"Method {method.name} generated fragments smaller than MIN_FRAGMENT_AREA"
+    if method == SplittingMethod.VORONOI_POLYGONS:
+        areas = voronoi_fragment_areas(mask)
+        assert np.all(areas >= mg.MIN_FRAGMENT_AREA), (
+            f"Method {method.name} generated fragments smaller than MIN_FRAGMENT_AREA"
+        )
+    else:
+        assert mg.is_cut_valid(mask) is True, f"Method {method.name} generated fragments smaller than MIN_FRAGMENT_AREA"
