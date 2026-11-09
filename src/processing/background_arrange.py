@@ -52,6 +52,10 @@ def arrange_on_background(height: int, width: int, fragments_list: list[ImageFra
     bg_h = int(1.5 * height)
     bg_w = int(1.5 * width)
     max_attempts = 100
+
+    # with no pieces there is nothing to place, so return just the empty background
+    if not fragments_list:
+        return np.full((bg_h, bg_w, 4), bg_colour, dtype=np.uint8)
     
     # store tuples of (x, y, w, h, fragment)
     placed_pieces = []
@@ -66,9 +70,12 @@ def arrange_on_background(height: int, width: int, fragments_list: list[ImageFra
         
         placed_successfully = False
         while not placed_successfully:
-            # if the piece is wider than the background, force an expansion
+            # if the piece is wider or taller than the background, force an expansion
             if bg_w <= frag_w:
                 bg_w += int(width * 0.25)
+                continue
+            if bg_h <= frag_h:
+                bg_h += int(height * 0.25)
                 continue
                 
             for _ in range(max_attempts):
