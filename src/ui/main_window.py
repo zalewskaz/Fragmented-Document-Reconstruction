@@ -172,7 +172,7 @@ class MainWindow(ctk.CTk):
             self.sidebar = None
 
         if view_name == "Module 1: Cutter":
-            self.sidebar = SidebarFrameModule1(master=self, cmd_preview_split=self.preview_split_action, cmd_run=self.run_action_splitting, cmd_save=self.save_action, warning_callback=self.show_warning)
+            self.sidebar = SidebarFrameModule1(master=self, cmd_preview_split=self.preview_split_action, cmd_run=self.run_action_splitting, cmd_save=self.save_action_module_1, warning_callback=self.show_warning)
             self.sidebar.grid(row=1, column=1, sticky="nsew")
         elif view_name == "Module 2: Assembler":
             self.sidebar = SidebarFrameModule2(master=self, cmd_run_extract=self.run_action_extract, cmd_run_reconstruct=self.run_action_reconstructing, cmd_save=self.save_action_module_2)
@@ -436,6 +436,24 @@ class MainWindow(ctk.CTk):
             self.action_menu.configure(state="normal")
 
     def run_action_extract(self):
+        if not self.ensure_image_loaded():
+            return
+
+        image = ProjectSession.original_image.copy()
+        height, width = image.shape[:2]
+
+        mask = image_splitter.get_fragment_contours(image)
+
+        # for the preview we thicken lines
+        # big images are shrunk more on screen so they get a bigger kernel
+        kernel_size = (5, 5) if max(height, width) > 1500 else (3, 3)
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, kernel_size)
+        preview_lines = cv2.dilate(mask.astype(np.uint8), kernel)
+
+        image[preview_lines == 1] = [0, 0, 255]
+
+        self.render_image_on_ui(image)
+
         self.sidebar.set_reconstruct_enabled(True)
 
     def run_action_reconstructing(self):

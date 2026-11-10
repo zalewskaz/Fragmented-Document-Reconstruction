@@ -184,3 +184,20 @@ def get_neighboring_piece_labels(
                 neighboring_labels.add(neighbor_label)
 
     return neighboring_labels
+
+def get_fragment_contours(original_image):
+    height, width = original_image.shape[:2]
+    mask = np.zeros((height, width), dtype=np.uint8)
+
+    gray = cv2.cvtColor(original_image, cv2.COLOR_BGR2GRAY)
+
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+
+    # binarizing with Otsu
+    _, thresh = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+
+    contours, hierarchy = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    cv2.drawContours(mask, contours, -1, 1, 1)
+
+    return mask
