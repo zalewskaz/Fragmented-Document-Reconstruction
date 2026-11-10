@@ -10,6 +10,8 @@ from src.processing import split_image, get_neighboring_piece_labels
 # Fixtures
 # ---------------------------------------------------------------------
 
+# TODO: test also fragments that aren't rectangles 
+
 @pytest.fixture
 def sample_image():
     """Returns a 20x20 3-channel (BGR) image."""
