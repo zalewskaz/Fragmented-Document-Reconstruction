@@ -10,6 +10,7 @@ import processing.image_splitter as image_splitter
 import processing.background_arrange as background_arrange
 import processing.fragment_rotation as fragment_rotation
 from models import SplittingMethod, ProjectSession, ImageFragment, RotationOption
+from src.models.parameters_enums import EdgePixelAttributionOption
 from src.ui.module_2_sidebar import SidebarFrameModule2
 from src.utils.io import get_valid_paths, read_image, save_image_as_png, InvalidImageInputError
 from ui.module_1_sidebar import SidebarFrameModule1
@@ -178,8 +179,7 @@ class MainWindow(ctk.CTk):
             self.sidebar = SidebarFrameModule2(master=self, cmd_run_extract=self.run_action_extract, cmd_run_reconstruct=self.run_action_reconstructing, cmd_save=self.save_action_module_2)
             self.sidebar.grid(row=1, column=1, sticky="nsew")
             if ProjectSession.pieces_on_background is not None:
-                image = cv2.cvtColor(ProjectSession.pieces_on_background, cv2.COLOR_BGRA2BGR)
-                ProjectSession.original_image = image
+                ProjectSession.original_image = ProjectSession.pieces_on_background
                 self.render_image_on_ui(ProjectSession.original_image)    
         else:
             pass
@@ -341,7 +341,7 @@ class MainWindow(ctk.CTk):
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, kernel_size)
         preview_lines = cv2.dilate(ProjectSession.mask.astype(np.uint8), kernel)
 
-        image[preview_lines == 1] = [0, 0, 255]
+        image[preview_lines == 1] = [0, 0, 255, 255]
 
         self.render_image_on_ui(image)
         # the screen now shows the preview instead of the result, so there's nothing to save until the next Run
@@ -446,17 +446,21 @@ class MainWindow(ctk.CTk):
         image = ProjectSession.original_image.copy()
         height, width = image.shape[:2]
 
-        mask = image_splitter.get_fragment_contours(image)
+        ProjectSession.extraction_mask, contour_mask = image_splitter.get_fragment_contours(image)
 
         # for the preview we thicken lines
         # big images are shrunk more on screen so they get a bigger kernel
         kernel_size = (5, 5) if max(height, width) > 1500 else (3, 3)
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, kernel_size)
-        preview_lines = cv2.dilate(mask.astype(np.uint8), kernel)
+        preview_lines = cv2.dilate(contour_mask.astype(np.uint8), kernel)
 
-        image[preview_lines == 1] = [0, 0, 255]
+        image[preview_lines == 1] = [0, 0, 255, 255]
 
         self.render_image_on_ui(image)
+
+        extraction_mask = (ProjectSession.extraction_mask == 0).astype(np.uint8)
+
+        ProjectSession.extracted_fragments = image_splitter.split_image(image, ProjectSession.extraction_mask, EdgePixelAttributionOption.DISAPPEAR)
 
         self.sidebar.set_reconstruct_enabled(True)
 

@@ -73,7 +73,9 @@ def read_image(path_obj: Path) -> np.ndarray:
         InvalidImageInputError: If the file cannot be read or decoded into an image array.
     """
     
+    # array_img = cv2.imdecode(np.fromfile(str(path_obj), dtype=np.uint8), cv2.IMREAD_COLOR)
     array_img = cv2.imdecode(np.fromfile(str(path_obj), dtype=np.uint8), cv2.IMREAD_COLOR)
+    array_img = cv2.cvtColor(array_img, cv2.COLOR_BGR2BGRA)
             
     if array_img is None:
         raise InvalidImageInputError(f"Failed to read the first image: {path_obj.name}")

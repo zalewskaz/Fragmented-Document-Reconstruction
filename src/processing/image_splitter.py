@@ -122,7 +122,7 @@ def split_image(
 
         # initialize a zeroed (transparent) array with an alpha channel
         fragment_data = np.zeros(
-            (pad_h, pad_w, channels + 1),
+            (pad_h, pad_w, channels),
             dtype=np.uint8
         )
 
@@ -133,13 +133,13 @@ def split_image(
         ]
 
         # map original pixels to the target region using the boolean mask
-        for ch in range(channels):
+        for ch in range(channels-1):
             target_region[piece_label_mask, ch] = (
                 piece_crop[:, :, ch][piece_label_mask]
             )
 
         # set alpha channel to fully opaque for the piece pixels
-        target_region[piece_label_mask, channels] = 255
+        target_region[piece_label_mask, channels-1] = 255
 
         fragments.append(ImageFragment(
             data=fragment_data,
@@ -188,6 +188,7 @@ def get_neighboring_piece_labels(
 def get_fragment_contours(original_image):
     height, width = original_image.shape[:2]
     mask = np.zeros((height, width), dtype=np.uint8)
+    contour_mask = np.zeros((height, width), dtype=np.uint8)
 
     gray = cv2.cvtColor(original_image, cv2.COLOR_BGR2GRAY)
 
@@ -205,6 +206,7 @@ def get_fragment_contours(original_image):
 
     contours, hierarchy = cv2.findContours(closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    cv2.drawContours(mask, contours, -1, 1, 1)
+    cv2.drawContours(mask, contours, -1, 1, cv2.FILLED)
+    cv2.drawContours(contour_mask, contours, -1, 1, 1)
 
-    return mask
+    return mask, contour_mask
