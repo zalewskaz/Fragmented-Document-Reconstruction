@@ -59,3 +59,7 @@ class EdgePixelAttributionOption(str, Enum):
     DISAPPEAR = "None"
     RANDOM_ATTRIBUTION = "Random"
     NON_RANDOM_ATTRIBUTION = "Non-random"
+
+class ReconstructingMethod(str, Enum):
+    # TODO: add actual methods
+    RECONSTRUCTING = "Reconstructing"
