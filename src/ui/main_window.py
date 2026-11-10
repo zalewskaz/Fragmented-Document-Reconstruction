@@ -177,6 +177,10 @@ class MainWindow(ctk.CTk):
         elif view_name == "Module 2: Assembler":
             self.sidebar = SidebarFrameModule2(master=self, cmd_run_extract=self.run_action_extract, cmd_run_reconstruct=self.run_action_reconstructing, cmd_save=self.save_action_module_2)
             self.sidebar.grid(row=1, column=1, sticky="nsew")
+            if ProjectSession.pieces_on_background is not None:
+                image = cv2.cvtColor(ProjectSession.pieces_on_background, cv2.COLOR_BGRA2BGR)
+                ProjectSession.original_image = image
+                self.render_image_on_ui(ProjectSession.original_image)    
         else:
             pass
 

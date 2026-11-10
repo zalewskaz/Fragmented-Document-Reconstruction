@@ -99,7 +99,7 @@ def split_image(
 
     # extract fragments
     fragments = []
-    padding = 5
+    padding = 10
     channels = original_image.shape[2]
 
     for i in valid_piece_ids:
@@ -191,12 +191,19 @@ def get_fragment_contours(original_image):
 
     gray = cv2.cvtColor(original_image, cv2.COLOR_BGR2GRAY)
 
+    corner_mean = gray[0:10, 0:10].mean()
+    if corner_mean > 127:
+        gray = cv2.bitwise_not(gray)
+
     blurred = cv2.GaussianBlur(gray, (5, 5), 0)
 
     # binarizing with Otsu
-    _, thresh = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    _, binarized = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
-    contours, hierarchy = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    k = np.ones((20, 20), np.uint8) 
+    closed = cv2.morphologyEx(binarized, cv2.MORPH_CLOSE, k)
+
+    contours, hierarchy = cv2.findContours(closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     cv2.drawContours(mask, contours, -1, 1, 1)
 
