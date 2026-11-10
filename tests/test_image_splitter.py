@@ -14,8 +14,8 @@ from src.processing import split_image, get_neighboring_piece_labels
 
 @pytest.fixture
 def sample_image():
-    """Returns a 20x20 3-channel (BGR) image."""
-    return np.ones((20, 20, 3), dtype=np.uint8) * 150
+    """Returns a 20x20 4-channel (BGR) image."""
+    return np.ones((20, 20, 4), dtype=np.uint8) * 150
 
 @pytest.fixture
 def sample_mask():
@@ -157,7 +157,7 @@ def test_split_image_extracts_correct_number_of_pieces(sample_image, sample_mask
 
 
 def test_split_image_adds_padding_and_alpha_channel(sample_image, sample_mask):
-    """Ensure output fragments have 5px padding and an alpha channel."""
+    """Ensure output fragments have 10px padding and an alpha channel."""
     fragments = split_image(
         sample_image, 
         sample_mask, 
@@ -165,8 +165,8 @@ def test_split_image_adds_padding_and_alpha_channel(sample_image, sample_mask):
     )
     
     fragment = fragments[0]
-    # original piece is 5x5, so with 5px padding on all sides, it should be 15x15
-    assert fragment.data.shape == (15, 15, 4)
+    # original piece is 5x5, so with 10px padding on all sides, it should be 25x25
+    assert fragment.data.shape == (25, 25, 4)
     
     # original x and y should match the crop coordinates (2, 2) and (2, 10) - in any order
     assert fragment.original_y == 2
@@ -196,8 +196,8 @@ def test_split_image_applies_random_attribution(mock_choice, sample_image):
     piece_1 = fragments_sorted[0]
     piece_2 = fragments_sorted[1]
     
-    assert piece_1.data.shape[1] == 13
-    assert piece_2.data.shape[1] == 16
+    assert piece_1.data.shape[1] == 23
+    assert piece_2.data.shape[1] == 26
 
 
 def test_split_image_applies_non_random_attribution(sample_image):
@@ -217,8 +217,8 @@ def test_split_image_applies_non_random_attribution(sample_image):
     piece_1 = fragments_sorted[0]
     piece_2 = fragments_sorted[1]
     
-    assert piece_1.data.shape[1] == 14
-    assert piece_2.data.shape[1] == 15
+    assert piece_1.data.shape[1] == 24
+    assert piece_2.data.shape[1] == 25
 
 
 def test_split_image_handles_edge_pixels_with_only_edge_neighbors(sample_image):
@@ -242,4 +242,4 @@ def test_split_image_handles_edge_pixels_with_only_edge_neighbors(sample_image):
     piece_2 = fragments_sorted[1]
 
     assert piece_1.original_x == 1
-    assert piece_1.data.shape == (19, 19, 4)
+    assert piece_1.data.shape == (29, 29, 4)
