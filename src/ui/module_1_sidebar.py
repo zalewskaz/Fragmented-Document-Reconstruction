@@ -4,7 +4,7 @@ import numpy as np
 from models import SplittingMethod, ProjectSession, RotationOption, EdgePixelAttributionOption
 from .CTkSpinbox import CTkSpinbox
 
-class SidebarFrame(ctk.CTkFrame):
+class SidebarFrameModule1(ctk.CTkFrame):
     """
     A sidebar widget containing parameter controls and action buttons for the first module of the application.
 
@@ -54,7 +54,7 @@ class SidebarFrame(ctk.CTkFrame):
         )
         self.split_opt_label.grid(row=0, column=0, padx=(0, 10))
 
-        split_methods = [metoda.value for metoda in SplittingMethod]
+        split_methods = [method.value for method in SplittingMethod]
 
         self.split_opt_dropdown = ctk.CTkOptionMenu(
             self.split_opt_container,

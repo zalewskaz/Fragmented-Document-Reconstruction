@@ -10,8 +10,9 @@ import processing.image_splitter as image_splitter
 import processing.background_arrange as background_arrange
 import processing.fragment_rotation as fragment_rotation
 from models import SplittingMethod, ProjectSession, ImageFragment, RotationOption
+from src.ui.module_2_sidebar import SidebarFrameModule2
 from src.utils.io import get_valid_paths, read_image, save_image_as_png, InvalidImageInputError
-from ui.module_1_sidebar import SidebarFrame
+from ui.module_1_sidebar import SidebarFrameModule1
 
 # params
 STATUS_HIDE_AFTER_MS = 5000  
@@ -65,7 +66,7 @@ class MainWindow(ctk.CTk):
         self.setup_content_area()
         self.setup_status_bar()
 
-        self.sidebar = SidebarFrame(master=self, cmd_preview_split=self.preview_split_action, cmd_run=self.run_action, cmd_save=self.save_action, warning_callback=self.show_warning)
+        self.sidebar = SidebarFrameModule1(master=self, cmd_preview_split=self.preview_split_action, cmd_run=self.run_action_splitting, cmd_save=self.save_action_module_1, warning_callback=self.show_warning)
         self.sidebar.grid(row=1, column=1, sticky="nsew")
 
     def setup_top_toolbar(self):
@@ -166,8 +167,19 @@ class MainWindow(ctk.CTk):
 
     def switch_view(self, view_name: str):
         """Switches the UI context between different application modules."""
-        
-        pass
+        if hasattr(self, 'sidebar') and self.sidebar is not None:
+            self.sidebar.destroy()
+            self.sidebar = None
+
+        if view_name == "Module 1: Cutter":
+            self.sidebar = SidebarFrameModule1(master=self, cmd_preview_split=self.preview_split_action, cmd_run=self.run_action_splitting, cmd_save=self.save_action, warning_callback=self.show_warning)
+            self.sidebar.grid(row=1, column=1, sticky="nsew")
+        elif view_name == "Module 2: Assembler":
+            self.sidebar = SidebarFrameModule2(master=self, cmd_run_extract=self.run_action_extract, cmd_run_reconstruct=self.run_action_reconstructing, cmd_save=self.save_action_module_2)
+            self.sidebar.grid(row=1, column=1, sticky="nsew")
+        else:
+            pass
+
 
     def handle_menu_action(self, choice: str):
         """
@@ -202,6 +214,8 @@ class MainWindow(ctk.CTk):
                         ProjectSession.pieces_on_background = None
                         self.sidebar.set_batch_mode(False)
                         self.render_image_on_ui(opencv_image)
+                        if hasattr(self.sidebar, 'set_reconstruct_enabled'):
+                            self.sidebar.set_reconstruct_enabled(False)
 
             elif choice == "Select Directory":
                 folder_path = filedialog.askdirectory(initialdir=data_dir)
@@ -218,6 +232,8 @@ class MainWindow(ctk.CTk):
                         self.sidebar.set_batch_mode(len(valid_paths) > 1)
                         self.render_image_on_ui(opencv_image)
                         messagebox.showinfo("Folder Loaded", f"Loaded folder successfully. Found {len(valid_paths)} valid images.")
+                        if hasattr(self.sidebar, 'set_reconstruct_enabled'):
+                            self.sidebar.set_reconstruct_enabled(False)
 
             elif choice in (SELECT_SAVE_LOCATION, CHANGE_SAVE_LOCATION):
                 self.choose_save_location()
@@ -362,7 +378,7 @@ class MainWindow(ctk.CTk):
 
         return pieces_on_background
 
-    def run_action(self):
+    def run_action_splitting(self):
         """
         Executes the fragmentation task based on the current UI parameters.
 
@@ -419,7 +435,13 @@ class MainWindow(ctk.CTk):
             self.sidebar.set_batch_running(False)
             self.action_menu.configure(state="normal")
 
-    def save_action(self):
+    def run_action_extract(self):
+        self.sidebar.set_reconstruct_enabled(True)
+
+    def run_action_reconstructing(self):
+        pass
+
+    def save_action(self, obj):
         """Handles manual save requests for the currently processed single image."""
 
         if ProjectSession.pieces_on_background is None:
@@ -429,12 +451,18 @@ class MainWindow(ctk.CTk):
             return
 
         try:
-            saved_path = save_image_as_png(self.save_location_path, self.loaded_image_path, ProjectSession.pieces_on_background)
+            saved_path = save_image_as_png(self.save_location_path, self.loaded_image_path, obj)
         except Exception as e:
             messagebox.showerror("Save Failed", f"Could not save the image:\n{e}")
             return
 
         self.set_status(f"Image saved to: {saved_path}")
+
+    def save_action_module_1(self):
+        self.save_action(ProjectSession.pieces_on_background)
+
+    def save_action_module_2(self):
+        self.save_action(ProjectSession.reconstructed_image)
 
     def run_batch(self, paths: list[Path]):
         """
