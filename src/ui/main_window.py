@@ -1,4 +1,6 @@
 from pathlib import Path
+import queue
+import threading
 import tkinter as tk
 from tkinter import filedialog, messagebox
 import customtkinter as ctk
@@ -14,9 +16,21 @@ from src.utils.io import get_valid_paths, read_image, save_image_as_png, Invalid
 from ui.module_1_sidebar import SidebarFrame
 
 # params
-STATUS_HIDE_AFTER_MS = 5000  
+STATUS_HIDE_AFTER_MS = 5000
+CHECK_MESSAGES_EVERY_MS = 50  # how often the UI thread checks for messages from the worker thread
+STOPPING_MESSAGE_DELAY_MS = 300  # "Stopping..." is shown only if stopping takes longer than this
 SELECT_SAVE_LOCATION = "Select Save Location"
 CHANGE_SAVE_LOCATION = "Change Save Location"
+
+
+class ProcessingStopped(Exception):
+    """Raised in the worker thread when the user pressed Stop and there's no partial result worth keeping."""
+
+
+def raise_if_stopped(stop_callback):
+    """Raises ProcessingStopped if the user pressed Stop (stop_callback returns True)."""
+    if stop_callback is not None and stop_callback():
+        raise ProcessingStopped
 
 ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("dark-blue")
@@ -54,7 +68,16 @@ class MainWindow(ctk.CTk):
         self.loaded_image_path = None
         self.loaded_image_paths = []  # images to process: just one for a single file, all of them when a folder was picked
         self.save_location_path = None
-        self.current_image_display = None 
+        self.current_image_display = None
+
+        # messages from the worker thread to the UI thread, e.g. ("done", result) or ("warning", text);
+        # the worker thread can't change the window itself, so it puts messages here
+        # and the UI thread reads them every CHECK_MESSAGES_EVERY_MS in check_messages
+        self.messages = queue.Queue()
+
+        # set when the user presses Stop; the worker thread checks it and ends early
+        self.stop_event = threading.Event()
+        self.busy = False  # whether a computation is running in the worker thread
 
         self.grid_rowconfigure(0, weight=0)  
         self.grid_rowconfigure(1, weight=1)  
@@ -65,7 +88,7 @@ class MainWindow(ctk.CTk):
         self.setup_content_area()
         self.setup_status_bar()
 
-        self.sidebar = SidebarFrame(master=self, cmd_preview_split=self.preview_split_action, cmd_run=self.run_action, cmd_save=self.save_action, warning_callback=self.show_warning)
+        self.sidebar = SidebarFrame(master=self, cmd_preview_split=self.preview_split_action, cmd_run=self.run_action, cmd_save=self.save_action, cmd_stop=self.stop_action, warning_callback=self.show_warning, stop_callback=self.stop_event.is_set)
         self.sidebar.grid(row=1, column=1, sticky="nsew")
 
     def setup_top_toolbar(self):
@@ -301,74 +324,158 @@ class MainWindow(ctk.CTk):
 
         self.display_label.configure(text="", image=self.current_image_display)
 
+    def set_busy(self, busy: bool):
+        """Locks the buttons and the file menu while the worker thread is running, and unlocks them when it ends."""
+        self.busy = busy
+        self.sidebar.set_busy(busy)
+        self.action_menu.configure(state="disabled" if busy else "normal")
+
+    def run_in_background(self, work, on_done, stopped_message: str = "Stopped."):
+        """
+        Runs a long computation in a worker thread, so the window doesn't freeze.
+
+        The UI is locked until the work ends. `work` must not touch the UI - everything it needs
+        from the sidebar has to be read before. When it ends, `on_done` is called in the UI thread
+        with the value `work` returned; if `work` raised an exception, an error pop-up is shown instead.
+        If `work` raised ProcessingStopped (the user pressed Stop), only `stopped_message` is shown in the status bar.
+
+        Args:
+            work (callable): Function without arguments doing the computations, run in the worker thread.
+            on_done (callable): Function taking the result of `work`, run in the UI thread.
+            stopped_message (str, optional): Status bar message shown when `work` was stopped.
+        """
+        self.stop_event.clear()  # a Stop pressed during an earlier computation mustn't stop this one
+        self.set_busy(True)
+
+        def worker():
+            try:
+                self.messages.put(("done", work()))
+            except ProcessingStopped:
+                self.messages.put(("stopped", None))
+            except Exception as e:
+                self.messages.put(("error", e))
+
+        # daemon=True so that closing the window doesn't wait for the computation to end
+        threading.Thread(target=worker, daemon=True).start()
+        self.after(CHECK_MESSAGES_EVERY_MS, self.check_messages, on_done, stopped_message)
+
+    def check_messages(self, on_done, stopped_message: str):
+        """
+        Handles the messages the worker thread put into the queue.
+
+        Checks the queue again every CHECK_MESSAGES_EVERY_MS milliseconds until the work ends.
+        """
+        while not self.messages.empty():
+            kind, value = self.messages.get()
+
+            if kind == "warning":
+                messagebox.showwarning("Time limit reached", value)
+            elif kind == "status":
+                self.set_status(value, auto_hide=False)
+            elif kind == "image":
+                self.render_image_on_ui(value)
+            elif kind == "done":
+                self.set_busy(False)
+                # Stop was pressed, but the work ended before it noticed - don't leave "Stopping..." in the status bar
+                if self.stop_event.is_set():
+                    self.set_status("Finished before it could be stopped.")
+                on_done(value)
+                return
+            elif kind == "stopped":
+                # nothing to show - the screen keeps what it showed before
+                self.set_busy(False)
+                self.set_status(stopped_message)
+                return
+            elif kind == "error":
+                self.set_busy(False)
+                # Stop was pressed, but an error ended the work first - don't leave "Stopping..." in the status bar
+                if self.stop_event.is_set():
+                    self.set_status("Stopped.")
+                messagebox.showerror("Error", str(value))
+                return
+
+        self.after(CHECK_MESSAGES_EVERY_MS, self.check_messages, on_done, stopped_message)
+
     def preview_split_action(self):
         """
         Generates and renders a visual preview of the calculated cut lines on the source image.
+
+        The mask is generated in the worker thread, so the window doesn't freeze for long methods.
         """
         if not self.ensure_image_loaded():
             return
 
+        # read everything from the UI before starting the worker thread
         image = ProjectSession.original_image.copy()
         height, width = image.shape[:2]
         dynamic_params = self.sidebar.get_split_parameters()
         current_method = self.sidebar.split_opt_dropdown.get()
 
-        ProjectSession.mask = mask_generator.generate_mask(current_method, height, width, **dynamic_params)
+        def work():
+            mask = mask_generator.generate_mask(current_method, height, width, **dynamic_params)
+            return mask, draw_preview_lines(image, mask)
 
-        # for the preview we thicken lines
-        # big images are shrunk more on screen so they get a bigger kernel
-        kernel_size = (5, 5) if max(height, width) > 1500 else (3, 3)
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, kernel_size)
-        preview_lines = cv2.dilate(ProjectSession.mask.astype(np.uint8), kernel)
+        def on_done(result):
+            ProjectSession.mask, preview = result
+            self.render_image_on_ui(preview)
+            # the screen now shows the preview instead of the result, so there's nothing to save until the next Run
+            self.sidebar.set_save_enabled(False)
 
-        image[preview_lines == 1] = [0, 0, 255]
+            # after Stop the mask has only the lines drawn so far - it can still be used in Run
+            if self.stop_event.is_set():
+                self.set_status("Stopped. The preview shows the lines drawn before stopping.")
 
-        self.render_image_on_ui(image)
-        # the screen now shows the preview instead of the result, so there's nothing to save until the next Run
-        self.sidebar.set_save_enabled(False)
+        self.run_in_background(work, on_done)
 
-    def fragment_image(self, image: np.ndarray, mask: np.ndarray) -> np.ndarray:
+    def fragment_image(self, image: np.ndarray, mask: np.ndarray, edge_pixel_option: str,
+                       rotation_option: str, stop_callback=None) -> tuple[list[ImageFragment], np.ndarray]:
         """
         Executes the full fragmentation pipeline on a single image: cuts the image into pieces, rotates them (if such option is selected) and scatters them on a background.
+
+        It doesn't read anything from the UI and doesn't change ProjectSession, so it can run in the worker thread.
 
         Args:
             image (np.ndarray): The original source image matrix.
             mask (np.ndarray): The binary cut mask.
+            edge_pixel_option (str): The selected EdgePixelAttributionOption value.
+            rotation_option (str): The selected RotationOption value.
+            stop_callback (callable, optional): Function returning True if the user pressed Stop - checked between the steps.
 
         Returns:
-            np.ndarray: The finalized, composited image of the scattered fragments.
+            tuple[list[ImageFragment], np.ndarray]: The fragments and the finalized, composited image of the scattered fragments.
+
+        Raises:
+            ProcessingStopped: If the user pressed Stop.
         """
-        
+
         height, width = image.shape[:2]
 
         # cut the image into pieces along the mask lines
-        edge_pixel_option = self.sidebar.get_edge_pixel_option()
         fragments_list = image_splitter.split_image(image, mask, edge_pixel_option)
+        raise_if_stopped(stop_callback)
 
         # rotate pieces according to the selected dropdown option
-        if self.sidebar.get_rotation_option() == RotationOption.ROTATION_RANDOM.value:
+        if rotation_option == RotationOption.ROTATION_RANDOM.value:
             fragments_list = fragment_rotation.rotate_fragments_randomly(fragments_list)
-        elif self.sidebar.get_rotation_option() == RotationOption.ROTATION_90DEG.value:
+        elif rotation_option == RotationOption.ROTATION_90DEG.value:
             fragments_list = fragment_rotation.rotate_fragments_90deg(fragments_list)
-        elif self.sidebar.get_rotation_option() == RotationOption.ROTATION_180DEG.value:
-                    fragments_list = fragment_rotation.rotate_fragments_180deg(fragments_list)
-
-        ProjectSession.fragments = fragments_list
+        elif rotation_option == RotationOption.ROTATION_180DEG.value:
+            fragments_list = fragment_rotation.rotate_fragments_180deg(fragments_list)
+        raise_if_stopped(stop_callback)
 
         # scatter the pieces on a background that contrasts with the document
         bg_colour = background_arrange.pick_background_colour(image)
         pieces_on_background = background_arrange.arrange_on_background(height, width, fragments_list, bg_colour)
-        ProjectSession.pieces_on_background = pieces_on_background
 
-        return pieces_on_background
+        return fragments_list, pieces_on_background
 
     def run_action(self):
         """
         Executes the fragmentation task based on the current UI parameters.
 
         In single-file mode, it renders the result to the screen, pending manual save.
-        In batch mode, it processes and saves the first image, then triggers `run_batch` 
-        to process the remaining queue automatically.
+        In batch mode, it triggers `run_batch` to process and save all the images automatically.
+        In both modes the computations run in the worker thread, so the window doesn't freeze.
         """
         
         if not self.ensure_image_loaded():
@@ -383,41 +490,66 @@ class MainWindow(ctk.CTk):
             )
             return
 
+        # read everything from the UI before starting the worker thread
         image = ProjectSession.original_image.copy()
         height, width = image.shape[:2]
+        mask = ProjectSession.mask  # the mask from Preview, or None if there was no preview
+        dynamic_params = self.sidebar.get_split_parameters()
+        current_method = self.sidebar.split_opt_dropdown.get()
+        edge_pixel_option = self.sidebar.get_edge_pixel_option()
+        rotation_option = self.sidebar.get_rotation_option()
 
-        # generate a mask if it hasn't been generated already
-        if ProjectSession.mask is None:
-            dynamic_params = self.sidebar.get_split_parameters()
-            current_method = self.sidebar.split_opt_dropdown.get()
-            ProjectSession.mask = mask_generator.generate_mask(current_method, height, width, **dynamic_params)
-
-        pieces_on_background = self.fragment_image(image, ProjectSession.mask)
-
-        # show the result right away - update_idletasks() makes sure it's drawn before we continue
-        self.render_image_on_ui(pieces_on_background)
-        self.update_idletasks()
-
-        # single mode: just show the result - saving is done separately with the Save button
+        # single mode: compute in the worker thread and just show the result - saving is done separately with the Save button
         if not is_batch:
-            self.sidebar.set_save_enabled(True)
+            # after Stop nothing is shown - the screen keeps the previous image
+            stop_callback = self.stop_event.is_set
+
+            def work():
+                # generate a mask if it hasn't been generated already
+                result_mask = mask
+                if result_mask is None:
+                    result_mask = mask_generator.generate_mask(current_method, height, width, **dynamic_params)
+                    raise_if_stopped(stop_callback)
+                fragments, pieces_on_background = self.fragment_image(image, result_mask, edge_pixel_option,
+                                                                      rotation_option, stop_callback)
+                raise_if_stopped(stop_callback)
+                return result_mask, fragments, pieces_on_background
+
+            def on_done(result):
+                ProjectSession.mask, ProjectSession.fragments, ProjectSession.pieces_on_background = result
+                self.render_image_on_ui(ProjectSession.pieces_on_background)
+                self.sidebar.set_save_enabled(True)
+
+            # Save is enabled only when a Run result is on the screen - after Stop it stays there
+            if self.sidebar.save_enabled:
+                stopped_message = "Stopped. The previous result is kept."
+            else:
+                stopped_message = "Stopped. Nothing was processed."
+
+            self.run_in_background(work, on_done, stopped_message)
             return
 
-        # batch mode: save the first image, then go through the rest
-        try:
-            save_image_as_png(self.save_location_path, self.loaded_image_path, pieces_on_background)
-        except Exception as e:
-            messagebox.showerror("Save Failed", f"Could not save the image:\n{e}")
-            return
+        # batch mode: process and save all the images in the worker thread
+        self.run_batch(image, mask, current_method, dynamic_params, edge_pixel_option, rotation_option)
 
-        # lock Run, Preview and the file menu while the batch runs and unlock them again when the batch ends
-        self.sidebar.set_batch_running(True)
-        self.action_menu.configure(state="disabled")
-        try:
-            self.run_batch(self.loaded_image_paths[1:])
-        finally:
-            self.sidebar.set_batch_running(False)
-            self.action_menu.configure(state="normal")
+    def stop_action(self):
+        """
+        Asks the worker thread to stop the current computation.
+
+        The thread can't be stopped from outside - it checks stop_event itself and ends early,
+        so it may take a moment until the computation really stops.
+        """
+        self.stop_event.set()
+        self.sidebar.stop_button.configure(state="disabled")  # pressing it again wouldn't change anything
+
+        # usually it stops in a fraction of a second - "Stopping..." is shown only if it takes longer,
+        # so it doesn't just flash before "Stopped."
+        self.after(STOPPING_MESSAGE_DELAY_MS, self.show_stopping_status)
+
+    def show_stopping_status(self):
+        """Shows "Stopping..." if the computation is still running some time after Stop was pressed."""
+        if self.busy and self.stop_event.is_set():
+            self.set_status("Stopping...", auto_hide=False)
 
     def save_action(self):
         """Handles manual save requests for the currently processed single image."""
@@ -436,49 +568,125 @@ class MainWindow(ctk.CTk):
 
         self.set_status(f"Image saved to: {saved_path}")
 
-    def run_batch(self, paths: list[Path]):
+    def run_batch(self, first_image: np.ndarray, first_mask: np.ndarray | None, method: str, params: dict,
+                  edge_pixel_option: str, rotation_option: str):
         """
-        Iterates over a queue of images to dynamically mask, fragment, and save them automatically.
+        Masks, fragments and saves all the loaded images, one by one, in the worker thread.
 
-        Each queued image generates its own fresh mask using the currently selected 
-        method and parameters, ensuring accurate splitting across varying document 
-        dimensions within the directory.
+        The first image is the one already loaded (and possibly previewed) - it uses the mask from Preview
+        if there is one. Every other image is read from disk and gets its own fresh mask using the selected
+        method and parameters, ensuring accurate splitting across varying document dimensions within the directory.
+        A failed image doesn't stop the batch - it's listed in the summary at the end.
+        After Stop, the images saved so far are kept and the image being processed is skipped.
 
         Args:
-            paths (list[Path]): A list of pathlib.Path objects pointing to the remaining images in the batch queue.
+            first_image (np.ndarray): A copy of the first, already loaded image.
+            first_mask (np.ndarray | None): The mask from Preview for the first image, or None if there was no preview.
+            method (str): The selected splitting method.
+            params (dict): The splitting parameters read from the sidebar.
+            edge_pixel_option (str): The selected EdgePixelAttributionOption value.
+            rotation_option (str): The selected RotationOption value.
         """
-        
-        saved_count = 1  # the first image was already saved in run_action
-        failed = []
-        total = len(paths) + 1
+        # read everything from the UI before starting the worker thread
+        paths = list(self.loaded_image_paths)
+        save_dir = self.save_location_path
+        total = len(paths)
+        stop_callback = self.stop_event.is_set
 
-        for index, path in enumerate(paths, start=2):
-            self.set_status(f"Processing {index}/{total}: {path.name}", auto_hide=False)
-            self.update()
+        def work():
+            saved_count = 0
+            failed = []
+            stopped = False
+            mask_of_first = first_mask
+            fragments = pieces_on_background = None
 
-            try:
-                image = read_image(path)
-                height, width = image.shape[:2]
-                dynamic_params = self.sidebar.get_split_parameters()
-                current_method = self.sidebar.split_opt_dropdown.get()
-                mask = mask_generator.generate_mask(current_method, height, width, **dynamic_params)
+            for index, path in enumerate(paths, start=1):
+                if stop_callback():
+                    stopped = True
+                    break
 
-                pieces_on_background = self.fragment_image(image, mask)
-                save_image_as_png(self.save_location_path, path, pieces_on_background)
-                saved_count += 1
+                self.messages.put(("status", f"Processing {index}/{total}: {path.name}"))
 
-                self.render_image_on_ui(pieces_on_background)
-            except Exception as e:
-                failed.append(f"{path.name}: {e}")
+                try:
+                    if index == 1:
+                        image, mask = first_image, first_mask
+                    else:
+                        image, mask = read_image(path), None
 
-        summary = f"Saved {saved_count} of {total} images to: {self.save_location_path}"
-        self.set_status(summary)
+                    if mask is None:
+                        height, width = image.shape[:2]
+                        mask = mask_generator.generate_mask(method, height, width, **params)
+                        raise_if_stopped(stop_callback)
+                    if index == 1:
+                        mask_of_first = mask
 
-        if failed:
-            messagebox.showwarning("Batch Finished With Errors", summary + "\n\nFailed:\n" + "\n".join(failed))
-        else:
-            messagebox.showinfo("Batch Finished", summary)
+                    image_fragments, image_result = self.fragment_image(image, mask, edge_pixel_option,
+                                                                        rotation_option, stop_callback)
+                    raise_if_stopped(stop_callback)
+                    save_image_as_png(save_dir, path, image_result)
+                    saved_count += 1
+                    fragments, pieces_on_background = image_fragments, image_result
+
+                    # show each result as soon as it's ready
+                    self.messages.put(("image", pieces_on_background))
+                except ProcessingStopped:
+                    # the image being processed is skipped, the ones saved before are kept
+                    stopped = True
+                    break
+                except Exception as e:
+                    failed.append(f"{path.name}: {e}")
+
+            return saved_count, failed, stopped, mask_of_first, fragments, pieces_on_background
+
+        def on_done(result):
+            saved_count, failed, stopped, mask_of_first, fragments, pieces_on_background = result
+            ProjectSession.mask = mask_of_first
+            ProjectSession.fragments = fragments
+            ProjectSession.pieces_on_background = pieces_on_background
+
+            summary = f"Saved {saved_count} of {total} images to: {save_dir}"
+            if stopped:
+                summary = "Stopped. " + summary
+            self.set_status(summary)
+
+            title = "Batch Stopped" if stopped else "Batch Finished"
+            if failed:
+                messagebox.showwarning(title + " With Errors", summary + "\n\nFailed:\n" + "\n".join(failed))
+            else:
+                messagebox.showinfo(title, summary)
+
+        self.run_in_background(work, on_done)
 
     def show_warning(self, message):
-        """Displays a warning dialog to the user."""
+        """
+        Displays a warning dialog to the user.
+
+        Called from the worker thread, it can't open the dialog itself,
+        so it passes the message to the UI thread, which shows it in check_messages.
+        """
+        if threading.current_thread() is not threading.main_thread():
+            self.messages.put(("warning", message))
+            return
         messagebox.showwarning("Time limit reached", message)
+
+
+def draw_preview_lines(image: np.ndarray, mask: np.ndarray) -> np.ndarray:
+    """
+    Draws the cut lines from the mask on the image in red, thickened so they're visible on screen.
+
+    Args:
+        image (np.ndarray): The source image; it's modified in place.
+        mask (np.ndarray): The binary cut mask.
+
+    Returns:
+        np.ndarray: The image with the cut lines drawn on it.
+    """
+    height, width = image.shape[:2]
+
+    # big images are shrunk more on screen so they get a bigger kernel
+    kernel_size = (5, 5) if max(height, width) > 1500 else (3, 3)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, kernel_size)
+    preview_lines = cv2.dilate(mask.astype(np.uint8), kernel)
+
+    image[preview_lines == 1] = [0, 0, 255]
+    return image
