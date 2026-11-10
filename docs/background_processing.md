@@ -1,6 +1,7 @@
 # Background processing and the Stop button
 
-This document describes how long computations (Preview, Run, batch mode) run in the background,
+This document describes how long computations (Preview, Run, batch mode, fragment extraction in Module 2)
+run in the background,
 how they talk to the UI, what the user sees, and how to add a new long action (e.g. document
 reconstruction in Module 2).
 
@@ -22,7 +23,7 @@ can press **Stop**.
 | Thread | Created by | What it does |
 |---|---|---|
 | **UI thread** (main thread) | the program itself, `app.mainloop()` in `src/main.py` | everything connected with the window: buttons, drawing images, the status bar, pop-ups, `ProjectSession` |
-| **Worker thread** | `run_in_background`, one per Preview / Run / batch | only computations: mask, cutting, rotation, placing on the background, reading and saving files |
+| **Worker thread** | `run_in_background`, one per Preview / Run / batch / extraction | only computations: mask, cutting, rotation, placing on the background, extracting fragments, reading and saving files |
 
 There is at most one worker thread at a time - the buttons are locked while it runs.
 
@@ -140,8 +141,10 @@ The strip and rectangle methods aren't checked - they take a fraction of a secon
 If Stop is pressed but the work ends before it notices, the result is shown normally with
 "Finished before it could be stopped."
 
-While anything is computed, Run, Preview, Reset, Save and the file menu are locked, and Stop is
-active (`set_busy`). After the work ends, Save goes back to the state it had before.
+While anything is computed, Run, Preview, Reset, Save, the file menu and the module switch are locked,
+and Stop is active (`set_busy`). After the work ends, Save goes back to the state it had before.
+The module switch is locked because switching modules destroys the sidebar the computation reports to.
+
 
 ## Adding a new long action (e.g. reconstruction)
 

@@ -576,29 +576,30 @@ class MainWindow(ctk.CTk):
             self.set_status("Stopping...", auto_hide=False)
 
     def run_action_extract(self):
+        """
+        Finds the fragments on the image, shows their borders and extracts them for the reconstruction.
+
+        The computations run in the worker thread, so the window doesn't freeze for big images.
+        """
         if not self.ensure_image_loaded():
             return
 
+        # read everything from the UI before starting the worker thread
         image = ProjectSession.original_image.copy()
-        height, width = image.shape[:2]
 
-        ProjectSession.extraction_mask, contour_mask = image_splitter.get_fragment_contours(image)
+        def work():
+            extraction_mask, contour_mask = image_splitter.get_fragment_contours(image)
+            # the borders are drawn on the image the fragments are then cut from - same as before the move to threads
+            preview = draw_preview_lines(image, contour_mask)
+            extracted_fragments = image_splitter.split_image(preview, extraction_mask, EdgePixelAttributionOption.DISAPPEAR)
+            return extraction_mask, preview, extracted_fragments
 
-        # for the preview we thicken lines
-        # big images are shrunk more on screen so they get a bigger kernel
-        kernel_size = (5, 5) if max(height, width) > 1500 else (3, 3)
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, kernel_size)
-        preview_lines = cv2.dilate(contour_mask.astype(np.uint8), kernel)
+        def on_done(result):
+            ProjectSession.extraction_mask, preview, ProjectSession.extracted_fragments = result
+            self.render_image_on_ui(preview)
+            self.sidebar.set_reconstruct_enabled(True)
 
-        image[preview_lines == 1] = [0, 0, 255, 255]
-
-        self.render_image_on_ui(image)
-
-        extraction_mask = (ProjectSession.extraction_mask == 0).astype(np.uint8)
-
-        ProjectSession.extracted_fragments = image_splitter.split_image(image, ProjectSession.extraction_mask, EdgePixelAttributionOption.DISAPPEAR)
-
-        self.sidebar.set_reconstruct_enabled(True)
+        self.run_in_background(work, on_done)
 
     def run_action_reconstructing(self):
         pass

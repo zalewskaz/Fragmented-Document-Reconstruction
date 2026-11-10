@@ -24,6 +24,7 @@ class SidebarFrameModule2(ctk.CTkFrame):
         self.init_extract(frame=self.extract_frame, cmd_run=cmd_run_extract)
         self.init_reconstruct(frame=self.reconstruct_frame, cmd_run=cmd_run_reconstruct, cmd_save=cmd_save)
         self.set_reconstruct_enabled(False)
+        self.save_enabled = False  # the Save button starts greyed out
 
     def init_extract(self, frame, cmd_run):
         # title
@@ -134,12 +135,30 @@ class SidebarFrameModule2(ctk.CTkFrame):
         reconstructing_method = self.get_reconstructing_method()
         self.reconstruct_parameters_show(reconstructing_method)
 
+    def set_busy(self, busy: bool):
+        """
+        Locks or unlocks the buttons while a computation is running, so it can't be started twice.
+        When unlocking, the reconstruction options and Save go back to the state they had before.
+        """
+        self.run_extract_button.configure(state="disabled" if busy else "normal")
+
+        if busy:
+            self.reconstruct_opt_dropdown.configure(state="disabled")
+            self.reset_params_button.configure(state="disabled")
+            self.run_button.configure(state="disabled")
+            self.save_button.configure(state="disabled")
+        else:
+            self.set_reconstruct_enabled(self.reconstruct_enabled)
+            self.set_save_enabled(self.save_enabled)
+
     def set_save_enabled(self, enabled: bool):
         """Enables or disables the Save button."""
+        self.save_enabled = enabled  # remembered, so set_busy can restore it after a computation
         self.save_button.configure(state="normal" if enabled else "disabled")
 
     def set_reconstruct_enabled(self, enabled: bool):
         """Enables or disables the recuntraction options."""
+        self.reconstruct_enabled = enabled  # remembered, so set_busy can restore it after a computation
         self.reconstruct_opt_dropdown.configure(state="normal" if enabled else "disabled")
         # TODO: disable everything in the dynamic params frame
         self.reset_params_button.configure(state="normal" if enabled else "disabled")
