@@ -37,34 +37,39 @@ def generate_mask(splitting_method, height, width, strips_vertical_n=None, strip
     
     match splitting_method:
         case SplittingMethod.EVEN_VERTICAL:
-            return even_vertical_mask(mask, width, strips_vertical_n, strips_width)
+            result_mask = even_vertical_mask(mask, width, strips_vertical_n, strips_width)
         case SplittingMethod.EVEN_HORIZONTAL:
-            return even_horizontal_mask(mask, height, strips_horizontal_n, strips_height)
+            result_mask = even_horizontal_mask(mask, height, strips_horizontal_n, strips_height)
         case SplittingMethod.RANDOM_VERTICAL:
-            return random_vertical_mask(mask, width, strips_vertical_n)
+            result_mask = random_vertical_mask(mask, width, strips_vertical_n)
         case SplittingMethod.RANDOM_HORIZONTAL:
-            return random_horizontal_mask(mask, height, strips_horizontal_n)
+            result_mask = random_horizontal_mask(mask, height, strips_horizontal_n)
         case SplittingMethod.EVEN_RECTANGLES:
-            new_mask = even_vertical_mask(mask, width, strips_vertical_n, strips_width)
-            return even_horizontal_mask(new_mask, height, strips_horizontal_n, strips_height)
+            temp_mask = even_vertical_mask(mask, width, strips_vertical_n, strips_width)
+            result_mask = even_horizontal_mask(temp_mask, height, strips_horizontal_n, strips_height)
         case SplittingMethod.RANDOM_RECTANGLES:
-            new_mask = random_vertical_mask(mask, width, strips_vertical_n)
-            return random_horizontal_mask(new_mask, height, strips_horizontal_n)
+            temp_mask = random_vertical_mask(mask, width, strips_vertical_n)
+            result_mask = random_horizontal_mask(temp_mask, height, strips_horizontal_n)
         case SplittingMethod.SEGMENTED_STRIPS:
-            return segmented_mask(mask, height, width, strips_vertical_n, strips_horizontal_n, equal_segments, even_width)
+            result_mask = segmented_mask(mask, height, width, strips_vertical_n, strips_horizontal_n, equal_segments, even_width)
         case SplittingMethod.STRAIGHT_POLYGONS:
             if hierarchical:
-                return hierarchical_random_lines_mask(mask, height, width, lines_n, warning_callback)
+                result_mask = hierarchical_random_lines_mask(mask, height, width, lines_n, warning_callback)
             else:
-                return polylines_mask(mask, height, width, lines_n, 0, warning_callback)
+                result_mask = polylines_mask(mask, height, width, lines_n, 0, warning_callback)
         case SplittingMethod.POLYLINE_POLYGONS:
-            return polylines_mask(mask, height, width, lines_n, points_k, warning_callback)
+            result_mask = polylines_mask(mask, height, width, lines_n, points_k, warning_callback)
         case SplittingMethod.VORONOI_POLYGONS:
-            return voronoi_mask(mask, height, width, points_n, warning_callback)
+            result_mask = voronoi_mask(mask, height, width, points_n, warning_callback)
         case SplittingMethod.BEZIER_CURVES:
-            return polylines_mask(mask, height, width, lines_n, points_k, warning_callback, True)
+            result_mask = polylines_mask(mask, height, width, lines_n, points_k, warning_callback, True)
         case _:
-            return np.zeros((height, width))
+            result_mask = np.zeros((height, width))
+
+    if warning_callback is not None and not np.any(result_mask):
+        warning_callback("Image is too small or parameters prevented any cuts from being made.")
+
+    return result_mask
 
 def random_normal_ints(low, high, size=1):
     """
@@ -100,12 +105,18 @@ def random_cuts(val, max_strips, strips_n):
         np.ndarray: List of sampled cutting points.
     """
 
+    # there is no space for more than one strip, so no cuts
+    if max_strips < 2:
+        return np.array([], dtype=int)
+
     # drawing a random number of strips of it wasn't given
     if strips_n is None:
         strips_n = int(random_normal_ints(2, max_strips, size=1)[0])
 
     # asserting that all strips can fit
     strips_n = min(strips_n, max_strips)
+    if strips_n < 2:
+        return np.array([], dtype=int)
 
     # calculating the remaining free space if not for our minimmum fragment width
     free_space = val - (strips_n * MIN_FRAGMENT_WIDTH)
@@ -117,11 +128,13 @@ def random_cuts(val, max_strips, strips_n):
     samples = np.random.normal(loc=mean_width, scale=std_dev, size=strips_n)
     samples = np.clip(samples, 0.01, None) # getting rid of negative values
     samples_normalized = samples / np.sum(samples) # changing values to percentage of space
-    extra_widths = np.round(samples_normalized * free_space).astype(int)
+    raw_extra_widths = samples_normalized * free_space
+    extra_widths = np.floor(raw_extra_widths).astype(int)
 
-    # correcting the last strip
-    diff = free_space - np.sum(extra_widths)
-    extra_widths[np.argmax(extra_widths)] += diff
+    # giving the pixels lost in rounding down to the strips with the biggest fractional parts
+    # (so the extra widths always sum up to free_space and are never negative)
+    remainder = free_space - np.sum(extra_widths)
+    extra_widths[np.argsort(raw_extra_widths - extra_widths)[::-1][:remainder]] += 1
 
     # adding the minimal strip width
     widths = extra_widths + MIN_FRAGMENT_WIDTH
@@ -150,7 +163,7 @@ def even_vertical_mask(mask, width, strips_n, strips_width):
 
     # drawing the mask
     for j in range(strips_width, width, strips_width):
-        if (j + MIN_FRAGMENT_WIDTH < width):
+        if (j + MIN_FRAGMENT_WIDTH <= width):
             mask[:, j] = 1       
 
     return mask
@@ -202,7 +215,7 @@ def even_horizontal_mask(mask, height, strips_n, strips_height):
 
     # drawing the mask
     for i in range(strips_height, height, strips_height):
-        if (i+MIN_FRAGMENT_WIDTH < height):
+        if (i+MIN_FRAGMENT_WIDTH <= height):
             mask[i, :] = 1
 
     return mask
@@ -257,13 +270,16 @@ def segmented_mask(mask, height, width, strips_vertical_n, strips_horizontal_n, 
     max_strips = width // MIN_FRAGMENT_WIDTH
     if max_strips < 1:
         return mask
-    max_strips = min(30, max_strips)
+    max_strips = min(20, max_strips)
 
     # drawing a random number of strips if it wasn't given
-    if strips_vertical_n is None:
+    if strips_vertical_n is None and max_strips >= 2:
         strips_vertical_n = int(random_normal_ints(2, max_strips, size=1)[0])
 
-    if even_width:
+    if max_strips < 2:
+        # there is no space for more than one strip, so no vertical cuts
+        vertical_cut_points = np.array([], dtype=int)
+    elif even_width:
         # cutting into even strips
         strips_width = width // strips_vertical_n
         vertical_cut_points = np.arange(strips_width, width, strips_width, dtype=int)
@@ -283,9 +299,10 @@ def segmented_mask(mask, height, width, strips_vertical_n, strips_horizontal_n, 
 
     # asserting that all the cuts can fit
     max_strips = height // MIN_FRAGMENT_WIDTH
-    if max_strips < 1:
+    if max_strips < 2:
+        # there is no space for more than one segment, so no horizontal cuts
         return mask
-    max_strips = min(20, max_strips)
+    max_strips = min(25, max_strips)
 
     # drawing a random number of segments if it wasn't given
     if equal_segments and strips_horizontal_n is None:
@@ -351,6 +368,21 @@ def is_cut_valid(mask):
             return False # too small part found
     return True
 
+def count_fragments(mask):
+    """
+    Counts the fragments of the matrix.
+
+    Args:
+        mask (np.ndarray): Matrix to check.
+
+    Returns:
+        int: Number of fragments.
+    """
+
+    inverse_mask = np.where(mask == 0, 255, 0).astype(np.uint8)
+    num_labels, _ = cv2.connectedComponents(inverse_mask, connectivity=4)
+    return num_labels - 1
+
 def hierarchical_random_lines_mask(mask, height, width, lines_n, warning_callback):
     """
     Creates a mask with straight-edge polygons by recursively cutting the biggest fragment in two.
@@ -405,8 +437,9 @@ def hierarchical_random_lines_mask(mask, height, width, lines_n, warning_callbac
         segment_mask = cv2.bitwise_and(temp_line, piece_mask)
         temp_full_mask = cv2.bitwise_or(mask, segment_mask)
 
-        # checking whether the cut creates all valid elements
-        if is_cut_valid(temp_full_mask):
+        # checking whether the cut really splits the piece (a line along the border doesn't)
+        # and creates all valid elements
+        if count_fragments(temp_full_mask) > num_labels - 1 and is_cut_valid(temp_full_mask):
             mask = temp_full_mask
             cuts_done += 1
             attempts = 0
@@ -416,7 +449,7 @@ def hierarchical_random_lines_mask(mask, height, width, lines_n, warning_callbac
     # when the number of attempts excedded max attempts
     if cuts_done != lines_n:
         if warning_callback is not None:
-            warning_callback(f"Time limit exceeded. Only {cuts_done} out of {lines_n} lines were drawn.")
+            warning_callback(f"Time limit exceeded or space isn't big enough. Only {cuts_done} out of {lines_n} lines were drawn.")
 
     return mask
 
@@ -464,6 +497,7 @@ def polylines_mask(mask, height, width, lines_n, points_k, warning_callback, bez
 
     lines_drawn = 0
     attempts = 0
+    fragments_n = count_fragments(mask)
 
     while lines_drawn < lines_n and attempts < MAX_ATTEMPTS:
         # two random edges and points on those edges
@@ -487,9 +521,12 @@ def polylines_mask(mask, height, width, lines_n, points_k, warning_callback, bez
         temp_mask = mask.copy()
         cv2.polylines(temp_mask, [pts_array], isClosed=False, color=1, thickness=1)
 
-        # checking whether the cut creates all valid elements
-        if is_cut_valid(temp_mask):
+        # checking whether the line really cuts something (a line along the border
+        # or along already drawn lines doesn't) and creates all valid elements
+        new_fragments_n = count_fragments(temp_mask)
+        if new_fragments_n > fragments_n and is_cut_valid(temp_mask):
             mask = temp_mask
+            fragments_n = new_fragments_n
             lines_drawn += 1
             attempts = 0
         else:
