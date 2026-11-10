@@ -217,6 +217,6 @@ def reconstruct(fragments, algorithm, stop_callback=None):
   flag, e.g. `lambda: True` (stop right away) or a counter that says "stop" from its N-th call
   (`stop_after` in `tests/test_mask_generator.py`). Check that the loop ends at the first "stop", the
   partial result is valid, and `lambda: False` gives the same result as no callback.
-- **The UI** can be tested by creating `MainWindow()`, calling an action (e.g. `app.run_action()`),
+- **The UI** can be tested by creating `MainWindow()`, calling an action (e.g. `app.run_action_splitting()`),
   then calling `app.update()` in a loop until the buttons are unlocked. Replace `messagebox` functions
   with ones that record their arguments, so the test doesn't wait for a click.

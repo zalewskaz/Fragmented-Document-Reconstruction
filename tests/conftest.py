@@ -6,8 +6,8 @@ import pytest
 @pytest.fixture
 def sample_image() -> np.ndarray:
     """Return a small synthetic RGB image."""
-    image = np.zeros((10, 12, 3), dtype=np.uint8)
-    image[:, :] = (20, 100, 200)
+    image = np.zeros((10, 12, 4), dtype=np.uint8)
+    image[:, :] = (20, 100, 200, 255)
     return image
 
 

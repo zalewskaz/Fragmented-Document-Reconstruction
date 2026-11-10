@@ -67,7 +67,7 @@ def read_image(path_obj: Path) -> np.ndarray:
         path_obj (Path): The pathlib.Path object pointing to the image file.
 
     Returns:
-        np.ndarray: A 3-channel (BGR) NumPy array representing the loaded image.
+        np.ndarray: A 4-channel (BGR) NumPy array representing the loaded image.
 
     Raises:
         InvalidImageInputError: If the file cannot be read or decoded into an image array.
@@ -77,6 +77,8 @@ def read_image(path_obj: Path) -> np.ndarray:
             
     if array_img is None:
         raise InvalidImageInputError(f"Failed to read the first image: {path_obj.name}")
+
+    array_img = cv2.cvtColor(array_img, cv2.COLOR_BGR2BGRA)
         
     return array_img
 

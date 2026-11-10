@@ -12,8 +12,10 @@ import processing.image_splitter as image_splitter
 import processing.background_arrange as background_arrange
 import processing.fragment_rotation as fragment_rotation
 from models import SplittingMethod, ProjectSession, ImageFragment, RotationOption
+from src.models.parameters_enums import EdgePixelAttributionOption
+from src.ui.module_2_sidebar import SidebarFrameModule2
 from src.utils.io import get_valid_paths, read_image, save_image_as_png, InvalidImageInputError
-from ui.module_1_sidebar import SidebarFrame
+from ui.module_1_sidebar import SidebarFrameModule1
 
 # params
 STATUS_HIDE_AFTER_MS = 5000
@@ -88,7 +90,7 @@ class MainWindow(ctk.CTk):
         self.setup_content_area()
         self.setup_status_bar()
 
-        self.sidebar = SidebarFrame(master=self, cmd_preview_split=self.preview_split_action, cmd_run=self.run_action, cmd_save=self.save_action, cmd_stop=self.stop_action, warning_callback=self.show_warning, stop_callback=self.stop_event.is_set)
+        self.sidebar = SidebarFrameModule1(master=self, cmd_preview_split=self.preview_split_action, cmd_run=self.run_action_splitting, cmd_save=self.save_action_module_1, cmd_stop=self.stop_action, warning_callback=self.show_warning, stop_callback=self.stop_event.is_set)
         self.sidebar.grid(row=1, column=1, sticky="nsew")
 
     def setup_top_toolbar(self):
@@ -189,8 +191,22 @@ class MainWindow(ctk.CTk):
 
     def switch_view(self, view_name: str):
         """Switches the UI context between different application modules."""
-        
-        pass
+        if hasattr(self, 'sidebar') and self.sidebar is not None:
+            self.sidebar.destroy()
+            self.sidebar = None
+
+        if view_name == "Module 1: Cutter":
+            self.sidebar = SidebarFrameModule1(master=self, cmd_preview_split=self.preview_split_action, cmd_run=self.run_action_splitting, cmd_save=self.save_action_module_1, cmd_stop=self.stop_action, warning_callback=self.show_warning, stop_callback=self.stop_event.is_set)
+            self.sidebar.grid(row=1, column=1, sticky="nsew")
+        elif view_name == "Module 2: Assembler":
+            self.sidebar = SidebarFrameModule2(master=self, cmd_run_extract=self.run_action_extract, cmd_run_reconstruct=self.run_action_reconstructing, cmd_save=self.save_action_module_2)
+            self.sidebar.grid(row=1, column=1, sticky="nsew")
+            if ProjectSession.pieces_on_background is not None:
+                ProjectSession.original_image = ProjectSession.pieces_on_background
+                self.render_image_on_ui(ProjectSession.original_image)    
+        else:
+            pass
+
 
     def handle_menu_action(self, choice: str):
         """
@@ -225,6 +241,8 @@ class MainWindow(ctk.CTk):
                         ProjectSession.pieces_on_background = None
                         self.sidebar.set_batch_mode(False)
                         self.render_image_on_ui(opencv_image)
+                        if hasattr(self.sidebar, 'set_reconstruct_enabled'):
+                            self.sidebar.set_reconstruct_enabled(False)
 
             elif choice == "Select Directory":
                 folder_path = filedialog.askdirectory(initialdir=data_dir)
@@ -241,6 +259,8 @@ class MainWindow(ctk.CTk):
                         self.sidebar.set_batch_mode(len(valid_paths) > 1)
                         self.render_image_on_ui(opencv_image)
                         messagebox.showinfo("Folder Loaded", f"Loaded folder successfully. Found {len(valid_paths)} valid images.")
+                        if hasattr(self.sidebar, 'set_reconstruct_enabled'):
+                            self.sidebar.set_reconstruct_enabled(False)
 
             elif choice in (SELECT_SAVE_LOCATION, CHANGE_SAVE_LOCATION):
                 self.choose_save_location()
@@ -325,10 +345,14 @@ class MainWindow(ctk.CTk):
         self.display_label.configure(text="", image=self.current_image_display)
 
     def set_busy(self, busy: bool):
-        """Locks the buttons and the file menu while the worker thread is running, and unlocks them when it ends."""
+        """
+        Locks the buttons, the file menu and the module switch while the worker thread is running,
+        and unlocks them when it ends. Switching modules would destroy the sidebar the computation reports to.
+        """
         self.busy = busy
         self.sidebar.set_busy(busy)
         self.action_menu.configure(state="disabled" if busy else "normal")
+        self.module_switch.configure(state="disabled" if busy else "normal")
 
     def run_in_background(self, work, on_done, stopped_message: str = "Stopped."):
         """
@@ -469,7 +493,7 @@ class MainWindow(ctk.CTk):
 
         return fragments_list, pieces_on_background
 
-    def run_action(self):
+    def run_action_splitting(self):
         """
         Executes the fragmentation task based on the current UI parameters.
 
@@ -551,7 +575,35 @@ class MainWindow(ctk.CTk):
         if self.busy and self.stop_event.is_set():
             self.set_status("Stopping...", auto_hide=False)
 
-    def save_action(self):
+    def run_action_extract(self):
+        if not self.ensure_image_loaded():
+            return
+
+        image = ProjectSession.original_image.copy()
+        height, width = image.shape[:2]
+
+        ProjectSession.extraction_mask, contour_mask = image_splitter.get_fragment_contours(image)
+
+        # for the preview we thicken lines
+        # big images are shrunk more on screen so they get a bigger kernel
+        kernel_size = (5, 5) if max(height, width) > 1500 else (3, 3)
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, kernel_size)
+        preview_lines = cv2.dilate(contour_mask.astype(np.uint8), kernel)
+
+        image[preview_lines == 1] = [0, 0, 255, 255]
+
+        self.render_image_on_ui(image)
+
+        extraction_mask = (ProjectSession.extraction_mask == 0).astype(np.uint8)
+
+        ProjectSession.extracted_fragments = image_splitter.split_image(image, ProjectSession.extraction_mask, EdgePixelAttributionOption.DISAPPEAR)
+
+        self.sidebar.set_reconstruct_enabled(True)
+
+    def run_action_reconstructing(self):
+        pass
+
+    def save_action(self, obj):
         """Handles manual save requests for the currently processed single image."""
 
         if ProjectSession.pieces_on_background is None:
@@ -561,12 +613,18 @@ class MainWindow(ctk.CTk):
             return
 
         try:
-            saved_path = save_image_as_png(self.save_location_path, self.loaded_image_path, ProjectSession.pieces_on_background)
+            saved_path = save_image_as_png(self.save_location_path, self.loaded_image_path, obj)
         except Exception as e:
             messagebox.showerror("Save Failed", f"Could not save the image:\n{e}")
             return
 
         self.set_status(f"Image saved to: {saved_path}")
+
+    def save_action_module_1(self):
+        self.save_action(ProjectSession.pieces_on_background)
+
+    def save_action_module_2(self):
+        self.save_action(ProjectSession.reconstructed_image)
 
     def run_batch(self, first_image: np.ndarray, first_mask: np.ndarray | None, method: str, params: dict,
                   edge_pixel_option: str, rotation_option: str):
@@ -688,5 +746,6 @@ def draw_preview_lines(image: np.ndarray, mask: np.ndarray) -> np.ndarray:
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, kernel_size)
     preview_lines = cv2.dilate(mask.astype(np.uint8), kernel)
 
-    image[preview_lines == 1] = [0, 0, 255]
+    # red; images are read as BGRA, so the alpha channel is set too (opaque)
+    image[preview_lines == 1] = (0, 0, 255, 255)[:image.shape[2]]
     return image
