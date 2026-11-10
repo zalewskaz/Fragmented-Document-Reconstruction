@@ -198,6 +198,7 @@ def test_save_image_writes_valid_png(
     assert result.is_file()
 
     decoded = cv2.imread(str(result), cv2.IMREAD_COLOR)
+    decoded = cv2.cvtColor(decoded, cv2.COLOR_BGR2BGRA)
 
     assert decoded is not None
     assert decoded.shape == sample_image.shape

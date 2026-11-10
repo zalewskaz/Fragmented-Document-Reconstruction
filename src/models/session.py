@@ -23,6 +23,8 @@ class ProjectSession:
     bw_image: Optional[np.ndarray] = None
     binarized_image: Optional[np.ndarray] = None
     mask: Optional[np.ndarray] = None
+    extraction_mask: Optional[np.ndarray] = None
     fragments: List[ImageFragment] = None
+    extracted_fragments: List[ImageFragment] = None
     pieces_on_background: Optional[np.ndarray] = None
     reconstructed_image: Optional[np.ndarray] = None

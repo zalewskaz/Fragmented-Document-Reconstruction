@@ -4,7 +4,7 @@ import numpy as np
 import cv2
 from models import ImageFragment
 
-PADDING = 5
+PADDING = 10
 
 
 def rotate_fragment(fragment: ImageFragment, angle: float) -> ImageFragment:
@@ -17,7 +17,7 @@ def rotate_fragment(fragment: ImageFragment, angle: float) -> ImageFragment:
 
     Returns:
         ImageFragment: A new ImageFragment instance containing the rotated image 
-        data with 5px transparent padding on each side, along with updated rotation 
+        data with 10px transparent padding on each side, along with updated rotation 
         metadata.
     """
 
