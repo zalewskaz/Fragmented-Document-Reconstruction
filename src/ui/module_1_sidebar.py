@@ -17,15 +17,18 @@ class SidebarFrameModule1(ctk.CTkFrame):
         cmd_preview_split (callable): Callback function executed when the "Preview Split" button is pressed.
         cmd_run (callable): Callback function executed when the "Run" button is pressed.
         cmd_save (callable): Callback function executed when the "Save" button is pressed.
+        cmd_stop (callable): Callback function executed when the "Stop" button is pressed.
         warning_callback (callable): Function used by the backend to display UI warning pop-ups.
+        stop_callback (callable): Function used by the backend to check if the user pressed Stop.
         **kwargs: Additional keyword arguments passed to the underlying CTkFrame.
     """
 
-    def __init__(self, master, cmd_preview_split, cmd_run, cmd_save, warning_callback, **kwargs):
+    def __init__(self, master, cmd_preview_split, cmd_run, cmd_save, cmd_stop, warning_callback, stop_callback, **kwargs):
         super().__init__(master, width=220, corner_radius=0, **kwargs)
         self.grid_columnconfigure(0, weight=1)
 
         self.warning_callback = warning_callback
+        self.stop_callback = stop_callback
         
         self.grid_rowconfigure(10, weight=1)
 
@@ -145,6 +148,18 @@ class SidebarFrameModule1(ctk.CTkFrame):
             state="disabled",
         )
         self.save_button.grid(row=6, column=0, padx=20, pady=10)
+        self.save_enabled = False  # remembered, so set_busy can restore it after a computation
+
+        # Stop button - greyed out until a computation is running
+        self.stop_button = ctk.CTkButton(
+            self,
+            text="Stop",
+            command=cmd_stop,
+            state="disabled",
+            fg_color="#b33a3a",
+            hover_color="#8f2e2e",
+        )
+        self.stop_button.grid(row=7, column=0, padx=20, pady=10)
 
     def set_batch_mode(self, is_batch: bool):
         """Configures the UI layout for batch mode (one "Run & Save" button) or single mode (separate "Run" and "Save" buttons)."""
@@ -156,13 +171,26 @@ class SidebarFrameModule1(ctk.CTkFrame):
             self.save_button.grid()
         self.set_save_enabled(False)
 
-    def set_batch_running(self, running: bool):
-        """Locks or unlocks the Run and Preview buttons during batch processing, so the run can't be started twice."""
-        self.run_button.configure(state="disabled" if running else "normal")
-        self.prev_split_button.configure(state="disabled" if running else "normal")
+    def set_busy(self, busy: bool):
+        """
+        Locks or unlocks the Run, Preview, Reset and Save buttons while a computation is running,
+        so it can't be started twice. When unlocking, Save goes back to the state it had before.
+        The Stop button works the other way round - it's active only while a computation is running.
+        """
+        state = "disabled" if busy else "normal"
+        self.run_button.configure(state=state)
+        self.prev_split_button.configure(state=state)
+        self.reset_params_button.configure(state=state)
+        self.stop_button.configure(state="normal" if busy else "disabled")
+
+        if busy:
+            self.save_button.configure(state="disabled")
+        else:
+            self.set_save_enabled(self.save_enabled)
 
     def set_save_enabled(self, enabled: bool):
         """Enables or disables the Save button."""
+        self.save_enabled = enabled
         self.save_button.configure(state="normal" if enabled else "disabled")
 
     def get_splitting_method(self):
@@ -578,6 +606,7 @@ class SidebarFrameModule1(ctk.CTkFrame):
         current_method = self.split_opt_dropdown.get()
         params = {}
         params["warning_callback"] = self.warning_callback
+        params["stop_callback"] = self.stop_callback
 
         try:
             match current_method:
