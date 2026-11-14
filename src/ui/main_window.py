@@ -9,6 +9,7 @@ import cv2
 import numpy as np  
 import processing.mask_generator as mask_generator
 import processing.image_splitter as image_splitter
+import processing.fragment_extractor as fragment_extractor
 import processing.background_arrange as background_arrange
 import processing.fragment_rotation as fragment_rotation
 from models import SplittingMethod, ProjectSession, ImageFragment, RotationOption
@@ -586,12 +587,16 @@ class MainWindow(ctk.CTk):
 
         # read everything from the UI before starting the worker thread
         image = ProjectSession.original_image.copy()
+        method = self.sidebar.get_extraction_method()
+        stop_callback = self.stop_event.is_set
 
         def work():
-            extraction_mask, contour_mask = image_splitter.get_fragment_contours(image)
-            # the borders are drawn on the image the fragments are then cut from - same as before the move to threads
-            preview = draw_preview_lines(image, contour_mask)
-            extracted_fragments = image_splitter.split_image(preview, extraction_mask, EdgePixelAttributionOption.DISAPPEAR)
+            extraction_mask, contour_mask = fragment_extractor.get_fragment_contours(image, method)
+            raise_if_stopped(stop_callback)
+            # the fragments are cut from the clean image, so the preview lines don't end up in them
+            extracted_fragments = fragment_extractor.extract_fragments(image, extraction_mask)
+            raise_if_stopped(stop_callback)
+            preview = draw_preview_lines(image.copy(), contour_mask)
             return extraction_mask, preview, extracted_fragments
 
         def on_done(result):
