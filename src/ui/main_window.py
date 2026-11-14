@@ -71,6 +71,7 @@ class MainWindow(ctk.CTk):
         self.loaded_image_paths = []  # images to process: just one for a single file, all of them when a folder was picked
         self.save_location_path = None
         self.current_image_display = None
+        self.mask_settings = None
 
         # messages from the worker thread to the UI thread, e.g. ("done", result) or ("warning", text);
         # the worker thread can't change the window itself, so it puts messages here
@@ -434,6 +435,7 @@ class MainWindow(ctk.CTk):
         height, width = image.shape[:2]
         dynamic_params = self.sidebar.get_split_parameters()
         current_method = self.sidebar.split_opt_dropdown.get()
+        settings = (current_method, dynamic_params)
 
         def work():
             mask = mask_generator.generate_mask(current_method, height, width, **dynamic_params)
@@ -441,6 +443,7 @@ class MainWindow(ctk.CTk):
 
         def on_done(result):
             ProjectSession.mask, preview = result
+            self.mask_settings = settings
             self.render_image_on_ui(preview)
             # the screen now shows the preview instead of the result, so there's nothing to save until the next Run
             self.sidebar.set_save_enabled(False)
@@ -517,11 +520,15 @@ class MainWindow(ctk.CTk):
         # read everything from the UI before starting the worker thread
         image = ProjectSession.original_image.copy()
         height, width = image.shape[:2]
-        mask = ProjectSession.mask  # the mask from Preview, or None if there was no preview
         dynamic_params = self.sidebar.get_split_parameters()
         current_method = self.sidebar.split_opt_dropdown.get()
         edge_pixel_option = self.sidebar.get_edge_pixel_option()
         rotation_option = self.sidebar.get_rotation_option()
+
+        # the mask from Preview (or the previous Run) is used only if the method and parameters haven't
+        # changed since - otherwise (or if there's no mask yet) a new one is generated
+        settings = (current_method, dynamic_params)
+        mask = ProjectSession.mask if self.mask_settings == settings else None
 
         # single mode: compute in the worker thread and just show the result - saving is done separately with the Save button
         if not is_batch:
@@ -541,6 +548,7 @@ class MainWindow(ctk.CTk):
 
             def on_done(result):
                 ProjectSession.mask, ProjectSession.fragments, ProjectSession.pieces_on_background = result
+                self.mask_settings = settings
                 self.render_image_on_ui(ProjectSession.pieces_on_background)
                 self.sidebar.set_save_enabled(True)
 
@@ -700,6 +708,7 @@ class MainWindow(ctk.CTk):
         def on_done(result):
             saved_count, failed, stopped, mask_of_first, fragments, pieces_on_background = result
             ProjectSession.mask = mask_of_first
+            self.mask_settings = (method, params)
             ProjectSession.fragments = fragments
             ProjectSession.pieces_on_background = pieces_on_background
 
