@@ -127,6 +127,7 @@ Where the flag is checked:
 | `fragment_image` | after cutting and after rotation |
 | Run | after generating the mask and at the end |
 | batch | before each image, after its mask, in `fragment_image`, and before saving it |
+| Extract (Module 2) | after finding the contours and after cutting the fragments out |
 
 The strip and rectangle methods aren't checked - they take a fraction of a second.
 
@@ -136,6 +137,7 @@ The strip and rectangle methods aren't checked - they take a fraction of a secon
 |---|---|---|
 | **Preview** | the mask with the lines drawn so far (Voronoi: made from the center points chosen so far); it's saved in `ProjectSession.mask`, so Run uses it | "Stopped. The preview shows the lines drawn before stopping." |
 | **Run** | the screen keeps what it showed; nothing in `ProjectSession` changes; Save goes back to its previous state | "Stopped. The previous result is kept." if a Run result was on the screen, otherwise "Stopped. Nothing was processed." |
+| **Extract** | the screen keeps what it showed; nothing in `ProjectSession` changes | "Stopped." |
 | **Batch** | the images saved so far stay on disk; the image being processed is skipped (an image is saved whole or not at all) | "Stopped. Saved X of N images to: ..." and a "Batch Stopped" pop-up ("Batch Stopped With Errors" if some images failed before) |
 
 If Stop is pressed but the work ends before it notices, the result is shown normally with

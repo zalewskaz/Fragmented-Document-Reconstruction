@@ -60,6 +60,20 @@ class EdgePixelAttributionOption(str, Enum):
     RANDOM_ATTRIBUTION = "Random"
     NON_RANDOM_ATTRIBUTION = "Non-random"
 
+class ExtractionMethod(str, Enum):
+    """
+    Defines the algorithms for finding the fragments on an image (module 2).
+
+    Attributes:
+        FLOOD_FILL: Floods the background from the image border; everything the flood doesn't
+                    reach (pixels of a colour different from the background) is a fragment.
+        OTSU: Splits the pixels into bright and dark with Otsu's threshold and closes the gaps
+              with a morphological closing.
+    """
+
+    FLOOD_FILL = "Background flood fill"
+    OTSU = "Brightness threshold"
+
 class ReconstructingMethod(str, Enum):
     # TODO: add actual methods
     RECONSTRUCTING = "Reconstructing"

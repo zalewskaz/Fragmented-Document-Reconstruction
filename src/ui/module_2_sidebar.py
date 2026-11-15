@@ -1,7 +1,7 @@
 import customtkinter as ctk
 import cv2
 import numpy as np
-from models import ReconstructingMethod, ProjectSession, RotationOption, EdgePixelAttributionOption
+from models import ReconstructingMethod, ProjectSession, RotationOption, EdgePixelAttributionOption, ExtractionMethod
 from .CTkSpinbox import CTkSpinbox
 
 class SidebarFrameModule2(ctk.CTkFrame):
@@ -36,13 +36,31 @@ class SidebarFrameModule2(ctk.CTkFrame):
         )
         self.title.grid(row=0, column=0, padx=10, pady=10)
 
+        # extraction method selection
+        self.extract_opt_container = ctk.CTkFrame(frame, fg_color="transparent")
+        self.extract_opt_container.grid(row=1, column=0, padx=20, pady=10, sticky="ew")
+        self.extract_opt_container.grid_columnconfigure(1, weight=1)
+
+        self.extract_opt_label = ctk.CTkLabel(
+            self.extract_opt_container,
+            text="Extraction method:"
+        )
+        self.extract_opt_label.grid(row=0, column=0, padx=(0, 10))
+
+        self.extract_opt_dropdown = ctk.CTkOptionMenu(
+            self.extract_opt_container,
+            values=[method.value for method in ExtractionMethod]
+        )
+        self.extract_opt_dropdown.grid(row=0, column=1, sticky="ew")
+        self.extract_opt_dropdown.set(ExtractionMethod.FLOOD_FILL.value)
+
         # show fragment borders button
         self.run_extract_button = ctk.CTkButton(
-            frame, 
-            text="Show fragment borders", 
+            frame,
+            text="Show fragment borders",
             command=cmd_run
         )
-        self.run_extract_button.grid(row=1, column=0, padx=20, pady=10)
+        self.run_extract_button.grid(row=2, column=0, padx=20, pady=10)
 
         # TODO: optionally add a manual override
 
@@ -126,6 +144,10 @@ class SidebarFrameModule2(ctk.CTkFrame):
     def reconstruct_parameters_show(self, reconstructing_mode_str):
         pass
 
+    def get_extraction_method(self) -> str:
+        """Retrieves the currently selected ExtractionMethod value."""
+        return self.extract_opt_dropdown.get()
+
     def get_splitting_method(self):
         """Retrieves the currently selected reconstructing method."""
         return self.reconstruct_opt_dropdown.get()
@@ -141,6 +163,7 @@ class SidebarFrameModule2(ctk.CTkFrame):
         When unlocking, the reconstruction options and Save go back to the state they had before.
         """
         self.run_extract_button.configure(state="disabled" if busy else "normal")
+        self.extract_opt_dropdown.configure(state="disabled" if busy else "normal")
 
         if busy:
             self.reconstruct_opt_dropdown.configure(state="disabled")
