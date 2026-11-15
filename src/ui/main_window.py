@@ -618,7 +618,12 @@ class MainWindow(ctk.CTk):
         pass
 
     def save_action(self, obj):
-        """Handles manual save requests for the currently processed single image."""
+        """
+        Handles manual save requests for the currently processed single image.
+
+        Args:
+            obj (np.ndarray): Image to save
+        """
 
         if ProjectSession.pieces_on_background is None:
             return
@@ -635,9 +640,11 @@ class MainWindow(ctk.CTk):
         self.set_status(f"Image saved to: {saved_path}")
 
     def save_action_module_1(self):
+        """Handles manual save requests for the generated image of pieces on background."""
         self.save_action(ProjectSession.pieces_on_background)
 
     def save_action_module_2(self):
+        """Handles manual save requests for the generated reconstructed image."""
         self.save_action(ProjectSession.reconstructed_image)
 
     def run_batch(self, first_image: np.ndarray, first_mask: np.ndarray | None, method: str, params: dict,
