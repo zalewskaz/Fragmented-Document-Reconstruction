@@ -9,7 +9,7 @@ MAX_ATTEMPTS = 400
 
 def generate_mask(splitting_method, height, width, strips_vertical_n=None, strips_horizontal_n=None, 
                   strips_height=None, strips_width=None, equal_segments=True, even_width=True, lines_n=5, 
-                  points_k=0, hierarchical=False, points_n=5, warning_callback=None):
+                  points_k=0, hierarchical=False, points_n=5, warning_callback=None, stop_callback=None):
     """
     Generates a mask for splitting a document using a selected method.
 
@@ -28,6 +28,8 @@ def generate_mask(splitting_method, height, width, strips_vertical_n=None, strip
         hierarchical (bool, optional): Whether to use recursive cutting for straight-edge polygons.
         points_n (int, optional): Number of center points (in VORONOI_POLYGONS).
         warning_callback (callable, optional): Function to display a UI pop-up warning.
+        stop_callback (callable, optional): Function returning True if the user pressed Stop. The methods drawing
+            lines one by one then stop early and return the mask with the lines drawn so far.
 
     Returns:
         np.ndarray: Binary mask matrix where 1 represents a cut and 0 represents the background.
@@ -54,19 +56,21 @@ def generate_mask(splitting_method, height, width, strips_vertical_n=None, strip
             result_mask = segmented_mask(mask, height, width, strips_vertical_n, strips_horizontal_n, equal_segments, even_width)
         case SplittingMethod.STRAIGHT_POLYGONS:
             if hierarchical:
-                result_mask = hierarchical_random_lines_mask(mask, height, width, lines_n, warning_callback)
+                result_mask = hierarchical_random_lines_mask(mask, height, width, lines_n, warning_callback, stop_callback)
             else:
-                result_mask = polylines_mask(mask, height, width, lines_n, 0, warning_callback)
+                result_mask = polylines_mask(mask, height, width, lines_n, 0, warning_callback, stop_callback=stop_callback)
         case SplittingMethod.POLYLINE_POLYGONS:
-            result_mask = polylines_mask(mask, height, width, lines_n, points_k, warning_callback)
+            result_mask = polylines_mask(mask, height, width, lines_n, points_k, warning_callback, stop_callback=stop_callback)
         case SplittingMethod.VORONOI_POLYGONS:
-            result_mask = voronoi_mask(mask, height, width, points_n, warning_callback)
+            result_mask = voronoi_mask(mask, height, width, points_n, warning_callback, stop_callback)
         case SplittingMethod.BEZIER_CURVES:
-            result_mask = polylines_mask(mask, height, width, lines_n, points_k, warning_callback, True)
+            result_mask = polylines_mask(mask, height, width, lines_n, points_k, warning_callback, True, stop_callback)
         case _:
             result_mask = np.zeros((height, width))
 
-    if warning_callback is not None and not np.any(result_mask):
+    # no warning when the user pressed Stop - then an empty mask is expected
+    stopped = stop_callback is not None and stop_callback()
+    if warning_callback is not None and not np.any(result_mask) and not stopped:
         warning_callback("Image is too small or parameters prevented any cuts from being made.")
 
     return result_mask
@@ -383,7 +387,7 @@ def count_fragments(mask):
     num_labels, _ = cv2.connectedComponents(inverse_mask, connectivity=4)
     return num_labels - 1
 
-def hierarchical_random_lines_mask(mask, height, width, lines_n, warning_callback):
+def hierarchical_random_lines_mask(mask, height, width, lines_n, warning_callback, stop_callback=None):
     """
     Creates a mask with straight-edge polygons by recursively cutting the biggest fragment in two.
 
@@ -393,6 +397,8 @@ def hierarchical_random_lines_mask(mask, height, width, lines_n, warning_callbac
         width (int): Width of the image matrix.
         lines_n (int): Number of lines (cuts) to generate.
         warning_callback (callable, optional): Function to display a UI pop-up warning for time limit exceeded.
+        stop_callback (callable, optional): Function returning True if the user pressed Stop - then the mask
+            with the lines drawn so far is returned.
 
     Returns:
         np.ndarray: Binary mask matrix where 1 represents a cut and 0 represents the background.
@@ -400,8 +406,14 @@ def hierarchical_random_lines_mask(mask, height, width, lines_n, warning_callbac
 
     cuts_done = 0
     attempts = 0
+    stopped = False
 
     while cuts_done < lines_n and attempts < MAX_ATTEMPTS:
+        # the user pressed Stop - keep the lines drawn so far
+        if stop_callback is not None and stop_callback():
+            stopped = True
+            break
+
         # components statistics
         inverse_mask = np.where(mask == 0, 255, 0).astype(np.uint8)
         num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(inverse_mask, connectivity=4)
@@ -447,7 +459,7 @@ def hierarchical_random_lines_mask(mask, height, width, lines_n, warning_callbac
             attempts += 1
 
     # when the number of attempts excedded max attempts
-    if cuts_done != lines_n:
+    if cuts_done != lines_n and not stopped:
         if warning_callback is not None:
             warning_callback(f"Time limit exceeded or space isn't big enough. Only {cuts_done} out of {lines_n} lines were drawn.")
 
@@ -478,7 +490,7 @@ def get_bezier_curve(points, num_points=100):
         
     return curve.astype(np.int32)
 
-def polylines_mask(mask, height, width, lines_n, points_k, warning_callback, bezier=False):
+def polylines_mask(mask, height, width, lines_n, points_k, warning_callback, bezier=False, stop_callback=None):
     """
     Creates a mask with straight-edge polygons by drawing polylines or curves.
 
@@ -490,6 +502,8 @@ def polylines_mask(mask, height, width, lines_n, points_k, warning_callback, bez
         points_k (int): Number of vertices in a single line.
         warning_callback (callable, optional): Function to display a UI pop-up warning for time limit exceeded.
         bezier (boolean, optional): Whether to change the polylines into Bezier curves.
+        stop_callback (callable, optional): Function returning True if the user pressed Stop - then the mask
+            with the lines drawn so far is returned.
 
     Returns:
         np.ndarray: Binary mask matrix where 1 represents a cut and 0 represents the background.
@@ -498,8 +512,14 @@ def polylines_mask(mask, height, width, lines_n, points_k, warning_callback, bez
     lines_drawn = 0
     attempts = 0
     fragments_n = count_fragments(mask)
+    stopped = False
 
     while lines_drawn < lines_n and attempts < MAX_ATTEMPTS:
+        # the user pressed Stop - keep the lines drawn so far
+        if stop_callback is not None and stop_callback():
+            stopped = True
+            break
+
         # two random edges and points on those edges
         edges = np.random.choice(4, size=2, replace=False)
         pt_start = get_random_point_on_edge(edges[0], width, height)
@@ -533,13 +553,13 @@ def polylines_mask(mask, height, width, lines_n, points_k, warning_callback, bez
             attempts += 1
 
     # when the number of attempts excedded max attempts
-    if lines_drawn != lines_n:
+    if lines_drawn != lines_n and not stopped:
         if warning_callback is not None:
             warning_callback(f"Time limit exceeded. Only {lines_drawn} out of {lines_n} lines were drawn.")
 
     return mask
 
-def voronoi_mask(mask, height, width, points_n, warning_callback):
+def voronoi_mask(mask, height, width, points_n, warning_callback, stop_callback=None):
     """
     Creates a mask with polygons by using Voronoi tesselation.
 
@@ -549,6 +569,8 @@ def voronoi_mask(mask, height, width, points_n, warning_callback):
         width (int): Width of the image matrix.
         points_n (int): Number of center points.
         warning_callback (callable, optional): Function to display a UI pop-up warning for time limit exceeded.
+        stop_callback (callable, optional): Function returning True if the user pressed Stop - then the mask
+            is made from the center points chosen so far.
 
     Returns:
         np.ndarray: Binary mask matrix where 1 represents a cut and 0 represents the background.
@@ -563,8 +585,14 @@ def voronoi_mask(mask, height, width, points_n, warning_callback):
     accepted_points = []
     attempts = 0
     min_dist = 50
+    stopped = False
 
     while len(accepted_points) < points_n and attempts < MAX_ATTEMPTS*4:
+        # the user pressed Stop - keep the points chosen so far
+        if stop_callback is not None and stop_callback():
+            stopped = True
+            break
+
         # finding a random point on the matrix
         x = np.random.randint(0, width)
         y = np.random.randint(0, height)
@@ -586,7 +614,7 @@ def voronoi_mask(mask, height, width, points_n, warning_callback):
                 attempts += 1
 
     # when the number of attempts excedded max attempts
-    if len(accepted_points) != points_n:
+    if len(accepted_points) != points_n and not stopped:
         if warning_callback is not None:
             warning_callback(f"Time limit exceeded. Only {len(accepted_points)} out of {points_n} centers used.")
 

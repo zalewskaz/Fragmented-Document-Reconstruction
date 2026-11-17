@@ -14,7 +14,9 @@ class ProjectSession:
         bw_image (np.ndarray, optional): Grayscaled image matrix.
         binarized_image (np.ndarray, optional): Binarized image matrix.
         mask (np.ndarray, optional): The mask representing cut lines on the image; stored as a binary matrix where 1 = cut line.
+        extraction_mask (np.ndarray, optional): The mask of the fragments found on the image in module 2; stored as a binary matrix where 1 = fragment.
         fragments (List[ImageFragment]): List of fragments created by cutting the image, each stored as a separate BGRA image matrix with transparent background.
+        extracted_fragments (List[ImageFragment]): List of fragments extracted from the image in module 2, in the same format as `fragments`.
         pieces_on_background (np.ndarray, optional): Image matrix of fragments scattered on a solid background.
         reconstructed_image (np.ndarray, optional): Image matrix after reconstructing it using one of the algorithms.
     """

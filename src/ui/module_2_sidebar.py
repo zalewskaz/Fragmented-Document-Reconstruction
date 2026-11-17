@@ -1,7 +1,7 @@
 import customtkinter as ctk
 import cv2
 import numpy as np
-from models import ReconstructingMethod, ProjectSession, RotationOption, EdgePixelAttributionOption
+from models import ReconstructingMethod, ProjectSession, RotationOption, EdgePixelAttributionOption, ExtractionMethod
 from .CTkSpinbox import CTkSpinbox
 
 class SidebarFrameModule2(ctk.CTkFrame):
@@ -24,8 +24,10 @@ class SidebarFrameModule2(ctk.CTkFrame):
         self.init_extract(frame=self.extract_frame, cmd_run=cmd_run_extract)
         self.init_reconstruct(frame=self.reconstruct_frame, cmd_run=cmd_run_reconstruct, cmd_save=cmd_save)
         self.set_reconstruct_enabled(False)
+        self.save_enabled = False  # the Save button starts greyed out
 
     def init_extract(self, frame, cmd_run):
+        """Initialises the part of the sidebar responsible for extracting fragments."""
         # title
         self.title = ctk.CTkLabel(
             frame,
@@ -35,17 +37,36 @@ class SidebarFrameModule2(ctk.CTkFrame):
         )
         self.title.grid(row=0, column=0, padx=10, pady=10)
 
+        # extraction method selection
+        self.extract_opt_container = ctk.CTkFrame(frame, fg_color="transparent")
+        self.extract_opt_container.grid(row=1, column=0, padx=20, pady=10, sticky="ew")
+        self.extract_opt_container.grid_columnconfigure(1, weight=1)
+
+        self.extract_opt_label = ctk.CTkLabel(
+            self.extract_opt_container,
+            text="Extraction method:"
+        )
+        self.extract_opt_label.grid(row=0, column=0, padx=(0, 10))
+
+        self.extract_opt_dropdown = ctk.CTkOptionMenu(
+            self.extract_opt_container,
+            values=[method.value for method in ExtractionMethod]
+        )
+        self.extract_opt_dropdown.grid(row=0, column=1, sticky="ew")
+        self.extract_opt_dropdown.set(ExtractionMethod.FLOOD_FILL.value)
+
         # show fragment borders button
         self.run_extract_button = ctk.CTkButton(
-            frame, 
-            text="Show fragment borders", 
+            frame,
+            text="Show fragment borders",
             command=cmd_run
         )
-        self.run_extract_button.grid(row=1, column=0, padx=20, pady=10)
+        self.run_extract_button.grid(row=2, column=0, padx=20, pady=10)
 
         # TODO: optionally add a manual override
 
     def init_reconstruct(self, frame, cmd_run, cmd_save):
+        """Initialises the part of the sidebar responsible for image reconstruction."""
         # title
         self.title = ctk.CTkLabel(
             frame,
@@ -125,6 +146,10 @@ class SidebarFrameModule2(ctk.CTkFrame):
     def reconstruct_parameters_show(self, reconstructing_mode_str):
         pass
 
+    def get_extraction_method(self) -> str:
+        """Retrieves the currently selected ExtractionMethod value."""
+        return self.extract_opt_dropdown.get()
+
     def get_splitting_method(self):
         """Retrieves the currently selected reconstructing method."""
         return self.reconstruct_opt_dropdown.get()
@@ -134,12 +159,31 @@ class SidebarFrameModule2(ctk.CTkFrame):
         reconstructing_method = self.get_reconstructing_method()
         self.reconstruct_parameters_show(reconstructing_method)
 
+    def set_busy(self, busy: bool):
+        """
+        Locks or unlocks the buttons while a computation is running, so it can't be started twice.
+        When unlocking, the reconstruction options and Save go back to the state they had before.
+        """
+        self.run_extract_button.configure(state="disabled" if busy else "normal")
+        self.extract_opt_dropdown.configure(state="disabled" if busy else "normal")
+
+        if busy:
+            self.reconstruct_opt_dropdown.configure(state="disabled")
+            self.reset_params_button.configure(state="disabled")
+            self.run_button.configure(state="disabled")
+            self.save_button.configure(state="disabled")
+        else:
+            self.set_reconstruct_enabled(self.reconstruct_enabled)
+            self.set_save_enabled(self.save_enabled)
+
     def set_save_enabled(self, enabled: bool):
         """Enables or disables the Save button."""
+        self.save_enabled = enabled  # remembered, so set_busy can restore it after a computation
         self.save_button.configure(state="normal" if enabled else "disabled")
 
     def set_reconstruct_enabled(self, enabled: bool):
         """Enables or disables the recuntraction options."""
+        self.reconstruct_enabled = enabled  # remembered, so set_busy can restore it after a computation
         self.reconstruct_opt_dropdown.configure(state="normal" if enabled else "disabled")
         # TODO: disable everything in the dynamic params frame
         self.reset_params_button.configure(state="normal" if enabled else "disabled")

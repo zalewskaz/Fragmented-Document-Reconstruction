@@ -17,8 +17,8 @@ def split_image(
     randomly, or deterministically assigned to one of the pieces they neighbour so that all 
     pixels laying on a given edge get attributed to the same piece. 
 
-    Each fragmented image is extracted into a cropped bounding box with a 5-pixel transparent 
-    padding and an appended alpha channel. 
+    Each fragmented image is extracted into a cropped bounding box with a 10-pixel transparent 
+    padding and an appended alpha channel.
 
     Args:
         original_image (np.ndarray): The source image array from which to extract pixel data.
@@ -184,29 +184,3 @@ def get_neighboring_piece_labels(
                 neighboring_labels.add(neighbor_label)
 
     return neighboring_labels
-
-def get_fragment_contours(original_image):
-    height, width = original_image.shape[:2]
-    mask = np.zeros((height, width), dtype=np.uint8)
-    contour_mask = np.zeros((height, width), dtype=np.uint8)
-
-    gray = cv2.cvtColor(original_image, cv2.COLOR_BGR2GRAY)
-
-    corner_mean = gray[0:10, 0:10].mean()
-    if corner_mean > 127:
-        gray = cv2.bitwise_not(gray)
-
-    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-
-    # binarizing with Otsu
-    _, binarized = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-
-    k = np.ones((20, 20), np.uint8) 
-    closed = cv2.morphologyEx(binarized, cv2.MORPH_CLOSE, k)
-
-    contours, hierarchy = cv2.findContours(closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-    cv2.drawContours(mask, contours, -1, 1, cv2.FILLED)
-    cv2.drawContours(contour_mask, contours, -1, 1, 1)
-
-    return mask, contour_mask

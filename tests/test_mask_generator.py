@@ -656,3 +656,77 @@ def test_generate_mask_integration(method, height, width, kwargs):
         )
     else:
         assert mg.is_cut_valid(mask) is True, f"Method {method.name} generated fragments smaller than MIN_FRAGMENT_AREA"
+
+# --------------------------------------------
+# stop_callback
+# --------------------------------------------
+
+def stop_after(calls_n):
+    """Returns a stop_callback which says "stop" from its calls_n-th call on, and counts its calls."""
+    def stop_callback():
+        stop_callback.calls += 1
+        return stop_callback.calls >= calls_n
+    stop_callback.calls = 0
+    return stop_callback
+
+
+def run_method_with_stop(method_name, stop_callback, warning_callback):
+    """Runs one of the methods drawing lines one by one on a 400x400 mask."""
+    height, width = 400, 400
+    mask = np.zeros((height, width), dtype=np.uint8)
+
+    if method_name == "hierarchical":
+        return mg.hierarchical_random_lines_mask(mask, height, width, 10, warning_callback, stop_callback)
+    if method_name == "polylines":
+        return mg.polylines_mask(mask, height, width, 10, 2, warning_callback, stop_callback=stop_callback)
+    if method_name == "bezier":
+        return mg.polylines_mask(mask, height, width, 10, 2, warning_callback, bezier=True, stop_callback=stop_callback)
+    return mg.voronoi_mask(mask, height, width, 10, warning_callback, stop_callback)
+
+
+METHODS_WITH_STOP = ["hierarchical", "polylines", "bezier", "voronoi"]
+
+@pytest.mark.parametrize("method_name", METHODS_WITH_STOP)
+def test_stop_callback_stop_right_away_gives_empty_mask(method_name):
+    mock_warning = MagicMock()
+
+    new_mask = run_method_with_stop(method_name, stop_after(1), mock_warning)
+
+    assert not np.any(new_mask), "Nothing should be drawn when Stop was pressed before the first line"
+    # stopping isn't a failure, so there shouldn't be the "time limit exceeded" warning
+    mock_warning.assert_not_called()
+
+@pytest.mark.parametrize("method_name", METHODS_WITH_STOP)
+def test_stop_callback_keeps_lines_drawn_before_stop(method_name):
+    np.random.seed(0)
+    mock_warning = MagicMock()
+    stop_callback = stop_after(4)
+
+    new_mask = run_method_with_stop(method_name, stop_callback, mock_warning)
+
+    assert stop_callback.calls == 4, f"The loop should end at the first 'stop', after {stop_callback.calls} checks"
+    assert np.any(new_mask), "The lines drawn before Stop should be kept"
+    if method_name == "voronoi":
+        assert np.all(voronoi_fragment_areas(new_mask) >= mg.MIN_FRAGMENT_AREA), "Fragments should still be valid"
+    else:
+        assert mg.is_cut_valid(new_mask), "Fragments should still be valid"
+    mock_warning.assert_not_called()
+
+@pytest.mark.parametrize("method_name", METHODS_WITH_STOP)
+def test_stop_callback_never_stopping_changes_nothing(method_name):
+    np.random.seed(0)
+    mask_without_callback = run_method_with_stop(method_name, None, None)
+    np.random.seed(0)
+    mask_with_callback = run_method_with_stop(method_name, lambda: False, None)
+
+    assert np.array_equal(mask_without_callback, mask_with_callback), "Without Stop the mask should be the same as before"
+
+def test_generate_mask_stopped_no_empty_mask_warning():
+    mock_warning = MagicMock()
+
+    new_mask = mg.generate_mask(SplittingMethod.BEZIER_CURVES, 400, 400, lines_n=5, points_k=2,
+                                warning_callback=mock_warning, stop_callback=lambda: True)
+
+    assert not np.any(new_mask), "Nothing should be drawn when Stop was pressed before the first line"
+    # "Image is too small..." would be misleading - the mask is empty because of Stop
+    mock_warning.assert_not_called()
