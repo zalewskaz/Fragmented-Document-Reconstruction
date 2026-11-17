@@ -27,6 +27,7 @@ class SidebarFrameModule2(ctk.CTkFrame):
         self.save_enabled = False  # the Save button starts greyed out
 
     def init_extract(self, frame, cmd_run):
+        """Initialises the part of the sidebar responsible for extracting fragments."""
         # title
         self.title = ctk.CTkLabel(
             frame,
@@ -65,6 +66,7 @@ class SidebarFrameModule2(ctk.CTkFrame):
         # TODO: optionally add a manual override
 
     def init_reconstruct(self, frame, cmd_run, cmd_save):
+        """Initialises the part of the sidebar responsible for image reconstruction."""
         # title
         self.title = ctk.CTkLabel(
             frame,
