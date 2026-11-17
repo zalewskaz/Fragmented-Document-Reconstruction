@@ -13,12 +13,12 @@ def split_image(
     Splits an image into individual fragments based on a provided split mask and resolves 
     border pixels according to a specified attribution strategy.
 
-    Border pixels are either dropped entirely, assigned to one of the pieces they neighbor 
+    Border pixels are either dropped entirely, assigned to one of the pieces they neighbour 
     randomly, or deterministically assigned to one of the pieces they neighbour so that all 
     pixels laying on a given edge get attributed to the same piece. 
 
     Each fragmented image is extracted into a cropped bounding box with a 5-pixel transparent 
-    padding and an appended alpha channel.
+    padding and an appended alpha channel. 
 
     Args:
         original_image (np.ndarray): The source image array from which to extract pixel data.
