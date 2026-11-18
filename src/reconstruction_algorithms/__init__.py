@@ -1,1 +1,2 @@
 from .pairwise_matching import reconstruct_unrotated_strips
+from .evolutionary_algorithm import run_evolution
