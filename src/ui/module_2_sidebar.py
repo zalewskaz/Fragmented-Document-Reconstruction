@@ -5,7 +5,7 @@ from models import ReconstructingMethod, ProjectSession, RotationOption, EdgePix
 from .CTkSpinbox import CTkSpinbox
 
 class SidebarFrameModule2(ctk.CTkFrame):
-    def __init__(self, master, cmd_run_extract, cmd_run_reconstruct, cmd_save, **kwargs):
+    def __init__(self, master, cmd_run_extract, cmd_straighten, cmd_run_reconstruct, cmd_save, **kwargs):
         super().__init__(master, width=220, corner_radius=0, **kwargs)
         self.grid_columnconfigure(0, weight=1)
         
@@ -21,12 +21,12 @@ class SidebarFrameModule2(ctk.CTkFrame):
         self.reconstruct_frame.grid(row=1, column=0, sticky="nsew")
         self.reconstruct_frame.grid_columnconfigure(0, weight=1)
 
-        self.init_extract(frame=self.extract_frame, cmd_run=cmd_run_extract)
+        self.init_extract(frame=self.extract_frame, cmd_run=cmd_run_extract, cmd_straighten=cmd_straighten)
         self.init_reconstruct(frame=self.reconstruct_frame, cmd_run=cmd_run_reconstruct, cmd_save=cmd_save)
         self.set_reconstruct_enabled(False)
         self.save_enabled = False  # the Save button starts greyed out
 
-    def init_extract(self, frame, cmd_run):
+    def init_extract(self, frame, cmd_run, cmd_straighten):
         """Initialises the part of the sidebar responsible for extracting fragments."""
         # title
         self.title = ctk.CTkLabel(
@@ -62,6 +62,14 @@ class SidebarFrameModule2(ctk.CTkFrame):
             command=cmd_run
         )
         self.run_extract_button.grid(row=2, column=0, padx=20, pady=10)
+
+        # straighten fragments button - shows the extracted fragments rotated so their sides are axis-aligned
+        self.straighten_button = ctk.CTkButton(
+            frame,
+            text="Straighten fragments",
+            command=cmd_straighten
+        )
+        self.straighten_button.grid(row=3, column=0, padx=20, pady=10)
 
         # TODO: optionally add a manual override
 
@@ -168,6 +176,7 @@ class SidebarFrameModule2(ctk.CTkFrame):
         self.extract_opt_dropdown.configure(state="disabled" if busy else "normal")
 
         if busy:
+            self.straighten_button.configure(state="disabled")
             self.reconstruct_opt_dropdown.configure(state="disabled")
             self.reset_params_button.configure(state="disabled")
             self.run_button.configure(state="disabled")
@@ -182,8 +191,9 @@ class SidebarFrameModule2(ctk.CTkFrame):
         self.save_button.configure(state="normal" if enabled else "disabled")
 
     def set_reconstruct_enabled(self, enabled: bool):
-        """Enables or disables the recuntraction options."""
+        """Enables or disables the options that need extracted fragments: straightening and reconstruction."""
         self.reconstruct_enabled = enabled  # remembered, so set_busy can restore it after a computation
+        self.straighten_button.configure(state="normal" if enabled else "disabled")
         self.reconstruct_opt_dropdown.configure(state="normal" if enabled else "disabled")
         # TODO: disable everything in the dynamic params frame
         self.reset_params_button.configure(state="normal" if enabled else "disabled")
