@@ -131,3 +131,53 @@ def arrange_on_background(height: int, width: int, fragments_list: list[ImageFra
         roi[alpha_mask] = piece_data[alpha_mask]
         
     return background
+
+def arrange_in_rows(fragments_list: list[ImageFragment], bg_colour: tuple[int, int, int, int] = DARK_BACKGROUND,
+                    gap: int = 10) -> tuple[np.ndarray, list[tuple[int, int, int, int]]]:
+    """
+    Arranges the fragments in rows, in the order of the list, on a solid background - for previewing them.
+
+    The rows are about as wide as the side of a square holding all the fragments, so the result is
+    roughly square. Unlike `arrange_on_background`, the layout is the same every time.
+
+    Args:
+        fragments_list (list[ImageFragment]): The fragments to arrange, in BGRA format.
+        bg_colour (tuple[int, int, int, int], optional): The BGRA background colour. Defaults to DARK_BACKGROUND.
+        gap (int, optional): The space between the fragments and around them, in pixels.
+
+    Returns:
+        tuple[np.ndarray, list[tuple[int, int, int, int]]]:
+            - the BGRA image with the arranged fragments,
+            - the (x, y, width, height) of each fragment on that image, in the order of the list.
+    """
+    if not fragments_list:
+        return np.full((2 * gap, 2 * gap, 4), bg_colour, dtype=np.uint8), []
+
+    sizes = [frag.data.shape[:2] for frag in fragments_list]
+    max_frag_w = max(w for _, w in sizes)
+    total_area = sum((h + gap) * (w + gap) for h, w in sizes)
+    row_width = max(max_frag_w, int(np.sqrt(total_area)))
+
+    # place the fragments left to right, starting a new row when the next one doesn't fit
+    positions = []
+    x = y = gap
+    row_height = 0
+    for h, w in sizes:
+        if x > gap and x + w > gap + row_width:
+            x = gap
+            y += row_height + gap
+            row_height = 0
+        positions.append((x, y, w, h))
+        x += w + gap
+        row_height = max(row_height, h)
+
+    width = max(px + pw for px, _, pw, _ in positions) + gap
+    height = max(py + ph for _, py, _, ph in positions) + gap
+    background = np.full((height, width, 4), bg_colour, dtype=np.uint8)
+
+    for (px, py, pw, ph), frag in zip(positions, fragments_list):
+        roi = background[py:py + ph, px:px + pw]
+        alpha_mask = frag.data[..., -1] > 0
+        roi[alpha_mask] = frag.data[alpha_mask]
+
+    return background, positions
