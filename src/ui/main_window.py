@@ -16,7 +16,7 @@ import processing.fragment_straightening as fragment_straightening
 import processing.fragment_orientation as fragment_orientation
 from models import SplittingMethod, ProjectSession, ImageFragment, RotationOption
 from src.models.parameters_enums import EdgePixelAttributionOption
-from src.reconstruction_algorithms.evolutionary_algorithm import run_evolution
+from src.reconstruction_algorithms import run_evolution, run_evolution_path, run_beam_search_reconstruction
 from src.ui.module_2_sidebar import SidebarFrameModule2
 from src.utils.io import get_valid_paths, read_image, save_image_as_png, InvalidImageInputError
 from ui.module_1_sidebar import SidebarFrameModule1
@@ -675,7 +675,7 @@ class MainWindow(ctk.CTk):
         self.run_in_background(work, on_done)
 
     def run_action_reconstructing(self):
-        image = run_evolution(ProjectSession.extracted_fragments)
+        image = run_beam_search_reconstruction(ProjectSession.extracted_fragments)
         self.render_image_on_ui(image)
 
     def save_action(self, obj):
