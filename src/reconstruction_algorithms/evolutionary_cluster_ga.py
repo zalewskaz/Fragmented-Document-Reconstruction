@@ -6,6 +6,7 @@ from tqdm import tqdm
 import math
 import copy
 import cv2
+from processing import orient_fragments, straighten_fragments
 
 class FitnessEvaluator:
     def __init__(self, fragments, contour_anchors, width, height, scale_factor=4.0, 
@@ -439,7 +440,10 @@ def mutate_path(chromosome, contour_anchors, progress):
                 if num_p > 0 and contour_anchors[curr_frag]:
                     mutated[idx]['child_anchor_idx'] = pick_compatible_child_anchor(
                         contour_anchors[prev_frag][p_anc_idx],
-                        contour_anchors[curr_frag]
+                        contour_anchors[curr_frag],
+                        p_frag=prev_frag,
+                        p_idx=p_anc_idx,
+                        c_frag=curr_frag
                     )
                 else:
                     mutated[idx]['child_anchor_idx'] = 0
@@ -477,7 +481,10 @@ def mutate_path(chromosome, contour_anchors, progress):
                     if num_c_anchors > 0:
                         mutated[idx]['child_anchor_idx'] = pick_compatible_child_anchor(
                             contour_anchors[prev_frag][p_anc_idx],
-                            contour_anchors[curr_frag]
+                            contour_anchors[curr_frag],
+                            p_frag=prev_frag,
+                            p_idx=p_anc_idx,
+                            c_frag=curr_frag
                         )
                 else:
                     step_shift = random.choice([-1, 0, 1])
@@ -487,9 +494,13 @@ def mutate_path(chromosome, contour_anchors, progress):
                     if num_c_anchors > 0:
                         mutated[idx]['child_anchor_idx'] = pick_compatible_child_anchor(
                             contour_anchors[prev_frag][new_p_idx],
-                            contour_anchors[curr_frag]
+                            contour_anchors[curr_frag],
+                            p_frag=prev_frag,
+                            p_idx=new_p_idx,
+                            c_frag=curr_frag
                         )
 
+            # Fine-tune continuous slide along the seam (closes 1..15 px steps & diagonal gaps)
             cur_slide = mutated[idx].get('slide_offset', 0.0)
             cur_slide += random.gauss(0, 4.0 * temp + 1.0)
             mutated[idx]['slide_offset'] = max(-14.0, min(14.0, cur_slide))
@@ -569,7 +580,13 @@ def crossover_path(parent1, parent2, contour_anchors):
                     num_p = len(contour_anchors[prev_frag_id])
                     p_anc = random.randint(0, max(0, num_p - 1))
                     c_anc = (
-                        pick_compatible_child_anchor(contour_anchors[prev_frag_id][p_anc], contour_anchors[frag_id])
+                        pick_compatible_child_anchor(
+                            contour_anchors[prev_frag_id][p_anc], 
+                            contour_anchors[frag_id],
+                            p_frag=prev_frag_id,
+                            p_idx=p_anc,
+                            c_frag=frag_id
+                            )
                         if num_p > 0 and contour_anchors[frag_id] else 0
                     )
                     child.append({
@@ -594,7 +611,13 @@ def crossover_path(parent1, parent2, contour_anchors):
                 num_p = len(contour_anchors[prev_frag_id])
                 p_anc = random.randint(0, max(0, num_p - 1))
                 c_anc = (
-                    pick_compatible_child_anchor(contour_anchors[prev_frag_id][p_anc], contour_anchors[frag_id])
+                    pick_compatible_child_anchor(
+                        contour_anchors[prev_frag_id][p_anc], 
+                        contour_anchors[frag_id],
+                        p_frag=prev_frag_id,
+                        p_idx=p_anc,
+                        c_frag=frag_id
+                        )
                     if num_p > 0 and contour_anchors[frag_id] else 0
                 )
                 child.append({
@@ -709,14 +732,14 @@ def estimate_fragment_text_angle(frag_data: np.ndarray):
     return best_angle % 360.0
 
 
-def extract_contour_anchors(fragments, step_px: int = 16, min_edge_len: float = 50.0):
+def extract_contour_anchors(fragments, ocr_known=None, step_px: int = 16, min_edge_len: float = 50.0):
     """
     Extracts anchor points along straight edges, storing a 1D intensity & ink profile
     around each anchor so matching compares actual text lines and paper shading across seams.
     """
     all_fragments_anchors = []
 
-    for frag in fragments:
+    for idx, frag in enumerate(fragments):
         alpha = frag.data[:, :, 3]
         gray = cv2.cvtColor(frag.data[:, :, :3], cv2.COLOR_BGR2GRAY).astype(np.float32)
         gray_smooth = cv2.GaussianBlur(gray, (3, 3), 0)
@@ -729,7 +752,11 @@ def extract_contour_anchors(fragments, step_px: int = 16, min_edge_len: float = 
             all_fragments_anchors.append([])
             continue
 
-        text_angle = estimate_fragment_text_angle(frag.data)
+        if ocr_known is not None and ocr_known[idx]:
+            text_angle = 0.0
+        else:
+            text_angle = estimate_fragment_text_angle(frag.data)
+
         main_contour = max(contours, key=cv2.contourArea)
 
         epsilon = 0.012 * cv2.arcLength(main_contour, True)
@@ -774,6 +801,7 @@ def extract_contour_anchors(fragments, step_px: int = 16, min_edge_len: float = 
                     strip_samples.append(gray_smooth[ys, xs])
 
                 strip_profile = np.mean(strip_samples, axis=0)
+                grad_profile = np.diff(strip_profile)
                 profile_std = float(np.std(strip_profile))
 
                 anchors.append({
@@ -782,6 +810,7 @@ def extract_contour_anchors(fragments, step_px: int = 16, min_edge_len: float = 
                     'edge_len': edge_len,
                     'text_angle': text_angle,
                     'strip_profile': strip_profile,
+                    'grad_profile': grad_profile,
                     'profile_std': profile_std,
                     't_pos': float(t)
                 })
@@ -790,16 +819,106 @@ def extract_contour_anchors(fragments, step_px: int = 16, min_edge_len: float = 
 
     return all_fragments_anchors
 
+PAIRWISE_MATCH_CACHE = {}
 
-def pick_compatible_child_anchor(parent_anchor: dict, child_anchors: list) -> int:
+
+def precompute_pairwise_matches(contour_anchors, top_k: int = 5):
     """
-    Matches anchors by comparing:
-    1. Text line orientation (strictly rejects 90/270-deg turns; prefers 0-deg upright over 180-deg flip).
-    2. 1D edge strip profile similarity (reversed along the mating edge so text strokes & paper tone align).
-    3. Information content (prefers edges containing actual text/lines over blank white borders).
+    Stage 1 (Funkhouser et al. pairwise matching):
+    Precomputes and prunes the top-K best anchor matches between every ordered pair
+    of fragments using 1D color profiles, 1D gradient (stroke) profiles, edge lengths,
+    and text line orientation.
+    """
+    global PAIRWISE_MATCH_CACHE
+    PAIRWISE_MATCH_CACHE = {}
+    num_frags = len(contour_anchors)
+
+    for p_frag in range(num_frags):
+        p_list = contour_anchors[p_frag]
+        if not p_list:
+            continue
+
+        for p_idx, p_anc in enumerate(p_list):
+            p_text = p_anc['text_angle']
+            p_edge_angle = p_anc['angle']
+            p_len = p_anc['edge_len']
+            p_prof = p_anc['strip_profile']
+            p_grad = p_anc['grad_profile']
+            p_std = p_anc['profile_std']
+
+            for c_frag in range(num_frags):
+                if p_frag == c_frag:
+                    continue
+                c_list = contour_anchors[c_frag]
+                if not c_list:
+                    continue
+
+                candidates = []
+                for c_idx, c_anc in enumerate(c_list):
+                    c_text = c_anc['text_angle']
+                    c_edge_angle = c_anc['angle']
+
+                    # 1. Text orientation filter (rejects 90/270-deg turns)
+                    if p_text is not None and c_text is not None:
+                        rel_rot = (c_edge_angle - p_edge_angle - 180.0) % 360.0
+                        aligned_c_text = (c_text - rel_rot) % 360.0
+                        diff = abs(aligned_c_text - (p_text % 360.0))
+                        diff = min(diff, 360.0 - diff)
+
+                        if diff <= 10.0:
+                            angle_score = 1.0 / (1.0 + diff)
+                        elif abs(diff - 180.0) <= 10.0:
+                            angle_score = 0.25 / (1.0 + abs(diff - 180.0))
+                        else:
+                            continue
+                    else:
+                        angle_score = 0.4
+
+                    # 2. 1D intensity similarity (reversed along mating edge)
+                    c_prof_rev = c_anc['strip_profile'][::-1]
+                    color_mse = float(np.mean((p_prof - c_prof_rev) ** 2))
+                    color_score = 1.0 / (1.0 + (color_mse / 140.0))
+
+                    # 3. 1D gradient similarity (matches text line boundaries across illumination shifts)
+                    # Reversing edge direction negates the derivative sign
+                    c_grad_rev = -c_anc['grad_profile'][::-1]
+                    grad_mse = float(np.mean((p_grad - c_grad_rev) ** 2))
+                    grad_score = 1.0 / (1.0 + (grad_mse / 60.0))
+
+                    # 4. Content richness bonus (prefers edges with actual text/lines over blank margins)
+                    shared_texture = min(p_std, c_anc['profile_std'])
+                    texture_bonus = 1.0 + min(5.0, shared_texture / 8.0)
+
+                    # 5. Edge length similarity
+                    len_ratio = min(p_len, c_anc['edge_len']) / max(p_len, c_anc['edge_len'])
+                    len_score = 0.4 + 0.6 * (len_ratio ** 2)
+
+                    weight = angle_score * color_score * grad_score * texture_bonus * len_score + 1e-6
+                    candidates.append((c_idx, weight))
+
+                if candidates:
+                    # Prune to top-K strongest matches for this (p_frag, p_idx, c_frag) triple
+                    candidates.sort(key=lambda x: x[1], reverse=True)
+                    top_candidates = candidates[:top_k]
+                    c_indices = [item[0] for item in top_candidates]
+                    c_weights = [item[1] for item in top_candidates]
+                    PAIRWISE_MATCH_CACHE[(p_frag, p_idx, c_frag)] = (c_indices, c_weights)
+
+def pick_compatible_child_anchor(parent_anchor: dict, child_anchors: list,
+                                 p_frag: int = None, p_idx: int = None, c_frag: int = None) -> int:
+    """
+    Uses precomputed Funkhouser pairwise matches when available (PAIRWISE_MATCH_CACHE),
+    otherwise evaluates all compatible child anchors dynamically.
     """
     if not child_anchors:
         return 0
+
+    # With the Funkhouser's algorithm (as it's used in the article) for the initial edge matching
+    if PAIRWISE_MATCH_CACHE and p_frag is not None and p_idx is not None and c_frag is not None:
+        cached = PAIRWISE_MATCH_CACHE.get((p_frag, p_idx, c_frag))
+        if cached is not None:
+            c_indices, c_weights = cached
+            return random.choices(c_indices, weights=c_weights, k=1)[0]
 
     p_text = parent_anchor['text_angle']
     p_edge_angle = parent_anchor['angle']
@@ -814,7 +933,6 @@ def pick_compatible_child_anchor(parent_anchor: dict, child_anchors: list) -> in
         c_text = c_anc['text_angle']
         c_edge_angle = c_anc['angle']
 
-        # 1. Text orientation filter
         if p_text is not None and c_text is not None:
             rel_rot = (c_edge_angle - p_edge_angle - 180.0) % 360.0
             aligned_c_text = (c_text - rel_rot) % 360.0
@@ -830,16 +948,13 @@ def pick_compatible_child_anchor(parent_anchor: dict, child_anchors: list) -> in
         else:
             angle_score = 0.4
 
-        # 2. Compare 1D edge profile (reversed because mating edges run in opposite directions)
         c_prof_rev = c_anc['strip_profile'][::-1]
         mse = float(np.mean((p_prof - c_prof_rev) ** 2))
         profile_score = 1.0 / (1.0 + (mse / 150.0))
 
-        # 3. Bonus if both edges actually carry text/texture variation (avoids matching blank margins)
         shared_texture = min(p_std, c_anc['profile_std'])
         texture_bonus = 1.0 + min(4.0, shared_texture / 10.0)
 
-        # 4. Edge length compatibility
         len_ratio = min(p_len, c_anc['edge_len']) / max(p_len, c_anc['edge_len'])
         len_score = 0.5 + 0.5 * len_ratio
 
@@ -906,7 +1021,13 @@ class EvolutionaryAlgorithm:
                 
                 if num_prev_anchors > 0 and self.contour_anchors[curr_frag]:
                     p_anc = self.contour_anchors[prev_frag][parent_anchor]
-                    child_anchor = pick_compatible_child_anchor(p_anc, self.contour_anchors[curr_frag])
+                    child_anchor = pick_compatible_child_anchor(
+                        p_anc, 
+                        self.contour_anchors[curr_frag],
+                        p_frag=prev_frag,
+                        p_idx=parent_anchor,
+                        c_frag=curr_frag
+                        )
                 else:
                     child_anchor = 0
                 
@@ -1093,10 +1214,20 @@ def calculate_optimal_board_size(fragments, aspect_ratio=1.414, margin_multiplie
     
     return int(width), int(height)
 
-def run_evolution_cluster(fragments, width=2480, height=3508):
+def run_evolution_cluster(fragments, funkhouser=False, width=2480, height=3508):
+    straightened = straighten_fragments(fragments)
+    oriented_results = orient_fragments([frag for frag, _ in straightened])
+
+    fragments = [frag for frag, _ in oriented_results]
+    ocr_known = [known for _, known in oriented_results]
+
     # for the moment, we're using a specified width and height
     width, height = calculate_optimal_board_size(fragments)
-    contour_anchors = extract_contour_anchors(fragments)
+    contour_anchors = extract_contour_anchors(fragments, ocr_known=ocr_known)
+    if funkhouser:
+        precompute_pairwise_matches(contour_anchors, top_k=5)
+    else:
+        PAIRWISE_MATCH_CACHE.clear()
     
     evaluator = FitnessEvaluator(
         fragments=fragments,
