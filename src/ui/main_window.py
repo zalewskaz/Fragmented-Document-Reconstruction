@@ -12,6 +12,8 @@ import processing.image_splitter as image_splitter
 import processing.fragment_extractor as fragment_extractor
 import processing.background_arrange as background_arrange
 import processing.fragment_rotation as fragment_rotation
+import processing.fragment_straightening as fragment_straightening
+import processing.fragment_orientation as fragment_orientation
 from models import SplittingMethod, ProjectSession, ImageFragment, RotationOption
 from src.models.parameters_enums import EdgePixelAttributionOption
 from src.ui.module_2_sidebar import SidebarFrameModule2
@@ -22,6 +24,8 @@ from ui.module_1_sidebar import SidebarFrameModule1
 STATUS_HIDE_AFTER_MS = 5000
 CHECK_MESSAGES_EVERY_MS = 50  # how often the UI thread checks for messages from the worker thread
 STOPPING_MESSAGE_DELAY_MS = 300  # "Stopping..." is shown only if stopping takes longer than this
+RED = (0, 0, 255, 255)  # BGRA
+YELLOW = (0, 255, 255, 255)
 SELECT_SAVE_LOCATION = "Select Save Location"
 CHANGE_SAVE_LOCATION = "Change Save Location"
 
@@ -201,7 +205,7 @@ class MainWindow(ctk.CTk):
             self.sidebar = SidebarFrameModule1(master=self, cmd_preview_split=self.preview_split_action, cmd_run=self.run_action_splitting, cmd_save=self.save_action_module_1, cmd_stop=self.stop_action, warning_callback=self.show_warning, stop_callback=self.stop_event.is_set)
             self.sidebar.grid(row=1, column=1, sticky="nsew")
         elif view_name == "Module 2: Assembler":
-            self.sidebar = SidebarFrameModule2(master=self, cmd_run_extract=self.run_action_extract, cmd_run_reconstruct=self.run_action_reconstructing, cmd_save=self.save_action_module_2)
+            self.sidebar = SidebarFrameModule2(master=self, cmd_run_extract=self.run_action_extract, cmd_straighten=self.straighten_action, cmd_run_reconstruct=self.run_action_reconstructing, cmd_save=self.save_action_module_2)
             self.sidebar.grid(row=1, column=1, sticky="nsew")
             if ProjectSession.pieces_on_background is not None:
                 ProjectSession.original_image = ProjectSession.pieces_on_background
@@ -611,6 +615,61 @@ class MainWindow(ctk.CTk):
             ProjectSession.extraction_mask, preview, ProjectSession.extracted_fragments = result
             self.render_image_on_ui(preview)
             self.sidebar.set_reconstruct_enabled(True)
+
+        self.run_in_background(work, on_done)
+
+    def straighten_action(self):
+        """
+        Straightens the extracted fragments, turns them so their text is upright and shows them arranged in rows.
+
+        Rectangular fragments are rotated so their sides are horizontal and vertical, then turned by a multiple
+        of 90 degrees based on OCR; the ones without any readable words are shown in a yellow frame.
+        The other shapes are shown unchanged, in a red frame. The result is only a preview - nothing is
+        saved in ProjectSession. The computations run in the worker thread.
+        """
+        if not ProjectSession.extracted_fragments:
+            messagebox.showwarning("No Fragments", "Extract the fragments first (Show fragment borders).")
+            return
+
+        # read everything from the UI before starting the worker thread
+        fragments = list(ProjectSession.extracted_fragments)
+        stop_callback = self.stop_event.is_set
+
+        def work():
+            results = fragment_straightening.straighten_fragments(fragments, stop_callback=stop_callback)
+            raise_if_stopped(stop_callback)
+
+            # only the rectangles can be oriented - they're the only ones straightened up to a multiple of 90 degrees
+            rectangles = [fragment for fragment, is_rectangle in results if is_rectangle]
+            oriented = iter(fragment_orientation.orient_fragments(rectangles, stop_callback=stop_callback))
+            raise_if_stopped(stop_callback)
+
+            shown = []  # (fragment, frame colour or None)
+            for fragment, is_rectangle in results:
+                if not is_rectangle:
+                    shown.append((fragment, RED))
+                else:
+                    fragment, orientation_known = next(oriented)
+                    shown.append((fragment, None if orientation_known else YELLOW))
+
+            preview, positions = background_arrange.arrange_in_rows([fragment for fragment, _ in shown])
+            for (x, y, w, h), (_, colour) in zip(positions, shown):
+                if colour is not None:
+                    cv2.rectangle(preview, (x - 3, y - 3), (x + w + 2, y + h + 2), colour, 3)
+
+            not_rectangles = sum(colour == RED for _, colour in shown)
+            no_text = sum(colour == YELLOW for _, colour in shown)
+            return preview, len(results), not_rectangles, no_text
+
+        def on_done(result):
+            preview, total, not_rectangles, no_text = result
+            self.render_image_on_ui(preview)
+            status = f"Straightened {total - not_rectangles} of {total} fragments."
+            if no_text:
+                status += f" No text to orient by (yellow frame): {no_text}."
+            if not_rectangles:
+                status += f" Not rectangular (shown unchanged, in a red frame): {not_rectangles}."
+            self.set_status(status)
 
         self.run_in_background(work, on_done)
 
