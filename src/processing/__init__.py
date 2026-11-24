@@ -3,5 +3,5 @@ from .background_arrange import pick_background_colour, arrange_on_background, a
 from .fragment_rotation import rotate_fragment, rotate_fragments_randomly, rotate_fragments_90deg, rotate_fragments_180deg
 from .mask_generator import generate_mask, random_normal_ints, random_cuts, even_vertical_mask, random_vertical_mask, even_horizontal_mask, random_horizontal_mask, segmented_mask, get_random_point_on_edge, is_cut_valid, count_fragments, hierarchical_random_lines_mask, get_bezier_curve, polylines_mask, voronoi_mask
 from .fragment_extractor import get_fragment_contours, extract_fragments, flood_fill_foreground, otsu_foreground, border_median_colour, to_grayscale
-from .fragment_straightening import straighten_fragment, straighten_fragments, rectangle_deviation
+from .fragment_straightening import straighten_fragment, straighten_fragments, is_rectangle
 from .fragment_orientation import orient_fragment, orient_fragments, ocr_image, text_score

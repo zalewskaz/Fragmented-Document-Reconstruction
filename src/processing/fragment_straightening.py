@@ -3,19 +3,15 @@ import numpy as np
 from models import ImageFragment
 from .fragment_rotation import rotate_fragment
 
-MAX_RECTANGLE_DEVIATION = 3.0
+MIN_RECTANGLE_FILL = 0.9
 
-def straighten_fragment(
-    fragment: ImageFragment,
-    max_deviation: float = MAX_RECTANGLE_DEVIATION
-) -> tuple[ImageFragment, bool]:
+def straighten_fragment(fragment: ImageFragment) -> tuple[ImageFragment, bool]:
     """
     Rotates a rectangular fragment so its sides are horizontal and vertical.
 
     The smallest rotated rectangle containing the fragment (cv2.minAreaRect) gives the angle the fragment
-    is tilted by. The fragment counts as a rectangle if its outline lies within `max_deviation` pixels
-    of the sides of that rectangle (see `rectangle_deviation`). Only rectangles are rotated -
-    for other shapes the angle of the enclosing rectangle doesn't mean anything.
+    is tilted by. Only rectangles are rotated (see `is_rectangle`) - for other shapes the angle of
+    the enclosing rectangle doesn't mean anything.
 
     The angle is only known up to a multiple of 90 degrees, so the fragment is rotated by the smallest
     angle that makes its sides axis-aligned; whether its content is upright, sideways or upside down
@@ -23,8 +19,6 @@ def straighten_fragment(
 
     Args:
         fragment (ImageFragment): The fragment in BGRA format, with transparent background (alpha 0).
-        max_deviation (float, optional): The maximum distance (in pixels) of the outline from the sides
-                                         of the enclosing rectangle for the fragment to count as a rectangle.
 
     Returns:
         tuple[ImageFragment, bool]:
@@ -36,7 +30,7 @@ def straighten_fragment(
         return fragment, False
 
     rect = cv2.minAreaRect(contour)
-    if rectangle_deviation(contour, rect) > max_deviation:
+    if not is_rectangle(contour, rect):
         return fragment, False
 
     # minAreaRect returns the angle from a different range depending on the OpenCV version;
@@ -50,7 +44,6 @@ def straighten_fragment(
 
 def straighten_fragments(
     fragments: list[ImageFragment],
-    max_deviation: float = MAX_RECTANGLE_DEVIATION,
     stop_callback=None
 ) -> list[tuple[ImageFragment, bool]]:
     """
@@ -58,7 +51,6 @@ def straighten_fragments(
 
     Args:
         fragments (list[ImageFragment]): The fragments to straighten.
-        max_deviation (float, optional): See `straighten_fragment`.
         stop_callback (callable, optional): Function returning True if the user pressed Stop -
                                             checked before each fragment; the fragments done so far are returned.
 
@@ -69,8 +61,29 @@ def straighten_fragments(
     for fragment in fragments:
         if stop_callback is not None and stop_callback():
             break
-        results.append(straighten_fragment(fragment, max_deviation))
+        results.append(straighten_fragment(fragment))
     return results
+
+def is_rectangle(contour: np.ndarray, rect) -> bool:
+    """
+    Whether the contour is a rectangle: it fills at least MIN_RECTANGLE_FILL of the rotated rectangle `rect`
+    (the smallest one around it).
+
+    A rectangle fills all of it; rectangles damaged by the extraction (a notch, corners rounded by
+    the brightness threshold method) still fill nearly all of it, while other shapes leave much more
+    of it empty (a hexagon 25%, a triangle half).
+
+    Args:
+        contour (np.ndarray): Contour from cv2.findContours, shape (N, 1, 2).
+        rect: The rotated rectangle from cv2.minAreaRect.
+
+    Returns:
+        bool: Whether it's a rectangle.
+    """
+    width, height = rect[1]
+    if width * height == 0:
+        return False
+    return cv2.contourArea(contour) / (width * height) >= MIN_RECTANGLE_FILL
 
 def largest_contour(fragment: ImageFragment) -> np.ndarray | None:
     """Returns the outer contour of the biggest opaque area of the fragment, or None if it's fully transparent."""
@@ -79,26 +92,3 @@ def largest_contour(fragment: ImageFragment) -> np.ndarray | None:
     if not contours:
         return None
     return max(contours, key=cv2.contourArea)
-
-def rectangle_deviation(contour: np.ndarray, rect, percentile: float = 98) -> float:
-    """
-    Returns how far (in pixels) the contour lies from the sides of the rectangle.
-
-    It's the given percentile of the distances of the contour points, not the maximum: single pixels
-    sticking out or missing on the edge (e.g. left by the extraction) would otherwise make a rectangle
-    count as some other shape. A real difference in shape, like a cut corner, moves many points.
-
-    Args:
-        contour (np.ndarray): Contour from cv2.findContours (with CHAIN_APPROX_NONE), shape (N, 1, 2).
-        rect: The rotated rectangle from cv2.minAreaRect.
-        percentile (float, optional): Which percentile of the distances to return.
-
-    Returns:
-        float: The distance; close to 0 if the contour is the rectangle.
-    """
-    box = cv2.boxPoints(rect).astype(np.float32).reshape(-1, 1, 2)
-    distances = [
-        abs(cv2.pointPolygonTest(box, (float(point[0][0]), float(point[0][1])), True))
-        for point in contour
-    ]
-    return float(np.percentile(distances, percentile))
